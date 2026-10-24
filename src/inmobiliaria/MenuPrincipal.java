@@ -2,85 +2,149 @@ package inmobiliaria;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 /**
- * Menu principal en Swing. Solo navegacion: cada opcion queda lista para
- * enlazarse al panel/servicio de su modulo.
+ * Menu principal en Swing. Al iniciar solo se puede seleccionar un propietario;
+ * los demas modulos aparecen una vez seleccionado.
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
 public class MenuPrincipal extends JFrame {
 
-    /** Opcion del menu: titulo, descripcion y accion al presionarla. */
-    private record Opcion(String titulo, String descripcion, Runnable accion) {}
+    private static final String CARD_SELECCION = "seleccion";
+    private static final String CARD_MODULOS = "modulos";
+
+    private record Opcion(String titulo, String descripcion) {}
+
+    private final CardLayout cartas = new CardLayout();
+    private final JPanel contenedor = new JPanel(cartas);
+    // TODO: reemplazar por los propietarios cargados desde CSV / PropiedadService
+    private final DefaultComboBoxModel<String> propietarios = new DefaultComboBoxModel<>();
+    private final JComboBox<String> comboPropietarios = new JComboBox<>(propietarios);
+    private final JLabel lblPropietario = new JLabel(" ", SwingConstants.CENTER);
+    private final JMenu menuModulos = new JMenu("Módulos");
+    private final JMenuItem itemCambiar = new JMenuItem("Cambiar propietario");
+
+    private final Opcion[] opciones = {
+        new Opcion("Propiedades", "Edificios y unidades"),
+        new Opcion("Arrendatarios", "Datos personales y avales"),
+        new Opcion("Contratos", "Alta, renovación y finalización"),
+        new Opcion("Documentos", "Expediente por arrendatario"),
+        new Opcion("Cobro de rentas y mora", "Cuotas, pagos y recibos"),
+        new Opcion("Mantenimiento", "Solicitudes de reparación"),
+        new Opcion("Historial y deshacer", "Bitácora de operaciones"),
+        new Opcion("Reportes y alertas", "Ingresos, morosidad y ocupación"),
+    };
 
     public MenuPrincipal() {
-        super("Sistema de Gestión Inmobiliaria y Alquileres - Grupo 6");
+        super("Gestión Inmobiliaria - Grupo 6");
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override public void windowClosing(java.awt.event.WindowEvent e) { salir(); }
+        addWindowListener(new WindowAdapter() {
+            @Override public void windowClosing(WindowEvent e) { salir(); }
         });
 
-        Opcion[] opciones = {
-            new Opcion("Propietarios y propiedades", "Propietarios, edificios y unidades (2.1)", () -> abrir("Propietarios y propiedades")),
-            new Opcion("Arrendatarios", "Datos personales y avales (2.2)", () -> abrir("Arrendatarios")),
-            new Opcion("Contratos", "Alta, renovación y finalización (2.3)", () -> abrir("Contratos")),
-            new Opcion("Documentos", "Expediente por arrendatario (2.4)", () -> abrir("Documentos")),
-            new Opcion("Cobro de rentas y mora", "Cuotas, pagos y recibos (2.5)", () -> abrir("Cobro de rentas y mora")),
-            new Opcion("Mantenimiento", "Solicitudes de reparación (2.6)", () -> abrir("Mantenimiento")),
-            new Opcion("Historial y deshacer", "Bitácora de operaciones (2.7)", () -> abrir("Historial y deshacer")),
-            new Opcion("Reportes y alertas", "Ingresos, morosidad y ocupación", () -> abrir("Reportes y alertas")),
-        };
+        setJMenuBar(crearBarra());
+        contenedor.add(crearPanelSeleccion(), CARD_SELECCION);
+        contenedor.add(crearPanelModulos(), CARD_MODULOS);
+        add(contenedor);
 
-        setJMenuBar(crearBarra(opciones));
+        mostrarSeleccion();
+        setSize(640, 420);
+        setLocationRelativeTo(null);
+    }
 
-        JLabel titulo = new JLabel("Sistema de Gestión Inmobiliaria y Alquileres", SwingConstants.CENTER);
-        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 22f));
-        titulo.setBorder(BorderFactory.createEmptyBorder(20, 10, 10, 10));
+    // ---------- Pantalla inicial: seleccionar propietario ----------
+    private JPanel crearPanelSeleccion() {
+        JPanel p = new JPanel(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(8, 8, 8, 8);
+        c.gridx = 0; c.gridy = 0; c.gridwidth = 2;
+        JLabel l = new JLabel("Seleccione un propietario", SwingConstants.CENTER);
+        l.setFont(l.getFont().deriveFont(Font.BOLD, 18f));
+        p.add(l, c);
+
+        c.gridy = 1; c.fill = GridBagConstraints.HORIZONTAL;
+        comboPropietarios.setPreferredSize(new Dimension(320, 30));
+        p.add(comboPropietarios, c);
+
+        c.gridy = 2; c.gridwidth = 1; c.fill = GridBagConstraints.NONE;
+        JButton nuevo = new JButton("Nuevo propietario");
+        nuevo.addActionListener(e -> nuevoPropietario());
+        p.add(nuevo, c);
+
+        c.gridx = 1;
+        JButton continuar = new JButton("Continuar");
+        continuar.addActionListener(e -> continuarConPropietario());
+        p.add(continuar, c);
+        return p;
+    }
+
+    private void nuevoPropietario() {
+        // TODO: delegar el alta a PropiedadService (RN-01: identificador unico)
+        String nombre = JOptionPane.showInputDialog(this, "Nombre del propietario:");
+        if (nombre != null && !nombre.isBlank()) {
+            propietarios.addElement(nombre.trim());
+            propietarios.setSelectedItem(nombre.trim());
+        }
+    }
+
+    private void continuarConPropietario() {
+        Object sel = comboPropietarios.getSelectedItem();
+        if (sel == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione o cree un propietario.",
+                "Propietario", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        lblPropietario.setText("Propietario: " + sel);
+        menuModulos.setEnabled(true);
+        itemCambiar.setEnabled(true);
+        cartas.show(contenedor, CARD_MODULOS);
+    }
+
+    private void mostrarSeleccion() {
+        menuModulos.setEnabled(false);
+        itemCambiar.setEnabled(false);
+        cartas.show(contenedor, CARD_SELECCION);
+    }
+
+    // ---------- Pantalla de modulos (tras elegir propietario) ----------
+    private JPanel crearPanelModulos() {
+        JPanel p = new JPanel(new BorderLayout());
+        lblPropietario.setFont(lblPropietario.getFont().deriveFont(Font.BOLD, 16f));
+        lblPropietario.setBorder(BorderFactory.createEmptyBorder(15, 10, 5, 10));
+        p.add(lblPropietario, BorderLayout.NORTH);
 
         JPanel rejilla = new JPanel(new GridLayout(0, 2, 12, 12));
         rejilla.setBorder(BorderFactory.createEmptyBorder(10, 30, 20, 30));
         for (Opcion o : opciones) {
-            JButton b = new JButton("<html><center><b>" + o.titulo() + "</b><br><small>" + o.descripcion() + "</small></center></html>");
-            b.setPreferredSize(new Dimension(280, 70));
-            b.addActionListener(e -> o.accion().run());
+            JButton b = new JButton("<html><center><b>" + o.titulo() + "</b><br><small>"
+                + o.descripcion() + "</small></center></html>");
+            b.addActionListener(e -> abrir(o.titulo()));
             rejilla.add(b);
         }
-
-        JButton btnSalir = new JButton("Salir");
-        btnSalir.addActionListener(e -> salir());
-        JPanel pie = new JPanel();
-        pie.add(btnSalir);
-
-        setLayout(new BorderLayout());
-        add(titulo, BorderLayout.NORTH);
-        add(rejilla, BorderLayout.CENTER);
-        add(pie, BorderLayout.SOUTH);
-
-        pack();
-        setLocationRelativeTo(null);
+        p.add(rejilla, BorderLayout.CENTER);
+        return p;
     }
 
-    private JMenuBar crearBarra(Opcion[] opciones) {
+    private JMenuBar crearBarra() {
         JMenuBar barra = new JMenuBar();
 
         JMenu archivo = new JMenu("Archivo");
+        itemCambiar.addActionListener(e -> mostrarSeleccion());
         JMenuItem guardar = new JMenuItem("Guardar datos (CSV)");
         guardar.addActionListener(e -> abrir("Guardar datos (CSV)"));
-        JMenuItem salir = new JMenuItem("Salir");
-        salir.addActionListener(e -> salir());
+        archivo.add(itemCambiar);
         archivo.add(guardar);
-        archivo.addSeparator();
-        archivo.add(salir);
         barra.add(archivo);
 
-        JMenu modulos = new JMenu("Módulos");
         for (Opcion o : opciones) {
             JMenuItem item = new JMenuItem(o.titulo());
-            item.addActionListener(e -> o.accion().run());
-            modulos.add(item);
+            item.addActionListener(e -> abrir(o.titulo()));
+            menuModulos.add(item);
         }
-        barra.add(modulos);
+        barra.add(menuModulos);
 
         JMenu ayuda = new JMenu("Ayuda");
         JMenuItem acerca = new JMenuItem("Acerca de");
