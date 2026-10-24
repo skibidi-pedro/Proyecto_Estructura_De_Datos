@@ -1,12 +1,15 @@
 package inmobiliaria;
 
+import javax.swing.SwingUtilities;
+
 /**
- * Punto de entrada. Carga CSV, arranca el menu y guarda al cerrar (2.8).
+ * Punto de entrada. Arranca el menu Swing.
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
 public class Main {
     public static void main(String[] args) {
-        // TODO: cargar CSV -> MenuPrincipal -> guardar CSV
+        // TODO: cargar CSV antes de mostrar el menu (2.8)
+        SwingUtilities.invokeLater(() -> new MenuPrincipal().setVisible(true));
     }
 }
