@@ -6,5 +6,6 @@ package inmobiliaria.nucleo.persistencia;
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
 public interface Persistible {
-    // TODO
+    String aLineaCSV();
+    void desdeLineaCSV(String linea);
 }

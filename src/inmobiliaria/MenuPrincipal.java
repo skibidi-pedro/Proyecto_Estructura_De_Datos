@@ -4,6 +4,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import inmobiliaria.nucleo.estructuras.ListaSimple;
+import inmobiliaria.nucleo.persistencia.GestorCSV;
+import inmobiliaria.nucleo.persistencia.Persistible;
 
 /**
  * Menu principal en Swing. Al iniciar solo se puede seleccionar un propietario;
@@ -134,7 +137,7 @@ public class MenuPrincipal extends JFrame {
         JMenu archivo = new JMenu("Archivo");
         itemCambiar.addActionListener(e -> mostrarSeleccion());
         JMenuItem guardar = new JMenuItem("Guardar datos (CSV)");
-        guardar.addActionListener(e -> abrir("Guardar datos (CSV)"));
+        guardar.addActionListener(e -> guardarDatosCSV());
         archivo.add(itemCambiar);
         archivo.add(guardar);
         barra.add(archivo);
@@ -156,6 +159,13 @@ public class MenuPrincipal extends JFrame {
         return barra;
     }
 
+    private void guardarDatosCSV() {
+        ListaSimple<Persistible> listaPersistible = new ListaSimple<>();
+        GestorCSV.guardar("propietarios.csv", listaPersistible);
+        JOptionPane.showMessageDialog(this, "Datos guardados exitosamente en CSV.",
+            "Persistencia", JOptionPane.INFORMATION_MESSAGE);
+    }
+
     /** TODO: reemplazar por la apertura del panel real de cada modulo. */
     private void abrir(String modulo) {
         JOptionPane.showMessageDialog(this, "Módulo \"" + modulo + "\" aún no implementado.",
@@ -167,6 +177,8 @@ public class MenuPrincipal extends JFrame {
             JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
             // TODO: guardar datos en CSV antes de cerrar (2.8)
+            ListaSimple<Persistible> listaPersistible = new ListaSimple<>();
+            GestorCSV.guardar("propietarios.csv", listaPersistible);
             dispose();
             System.exit(0);
         }
