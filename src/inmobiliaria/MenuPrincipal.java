@@ -7,6 +7,7 @@ import java.awt.event.WindowEvent;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 import inmobiliaria.nucleo.persistencia.GestorCSV;
 import inmobiliaria.nucleo.persistencia.Persistible;
+import inmobiliaria.nucleo.historial.Historial;
 
 /**
  * Menu principal en Swing. Al iniciar solo se puede seleccionar un propietario;
@@ -29,6 +30,8 @@ public class MenuPrincipal extends JFrame {
     private final JLabel lblPropietario = new JLabel(" ", SwingConstants.CENTER);
     private final JMenu menuModulos = new JMenu("Módulos");
     private final JMenuItem itemCambiar = new JMenuItem("Cambiar propietario");
+    // Instancia del historial para manejar la pila de operaciones y el deshacer
+    private final Historial historial = new Historial();
 
     private final Opcion[] opciones = {
         new Opcion("Propiedades", "Edificios y unidades"),
@@ -90,6 +93,8 @@ public class MenuPrincipal extends JFrame {
         if (nombre != null && !nombre.isBlank()) {
             propietarios.addElement(nombre.trim());
             propietarios.setSelectedItem(nombre.trim());
+            // Registramos la operacion en la pila del historial
+            historial.registrarOperacion("Nuevo propietario registrado: " + nombre.trim());
         }
     }
 
@@ -138,8 +143,14 @@ public class MenuPrincipal extends JFrame {
         itemCambiar.addActionListener(e -> mostrarSeleccion());
         JMenuItem guardar = new JMenuItem("Guardar datos (CSV)");
         guardar.addActionListener(e -> guardarDatosCSV());
+
+        //Opcion de deshacer en la barra de menu
+        JMenuItem itemDeshacer = new JMenuItem("Deshacer ultima operacion");
+        itemDeshacer.addActionListener(e -> ejecutarDeshacer());
+
         archivo.add(itemCambiar);
         archivo.add(guardar);
+        archivo.add(itemDeshacer);
         barra.add(archivo);
 
         for (Opcion o : opciones) {
@@ -159,6 +170,17 @@ public class MenuPrincipal extends JFrame {
         return barra;
     }
 
+    private void ejecutarDeshacer() {
+        Object ultimaOp = historial.deshacer();
+        if (ultimaOp != null) {
+            JOptionPane.showMessageDialog(this, "Operacion deshecha con exito:\n" + ultimaOp.toString(),
+            "Deshacer", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "No hay operaciones registradas para deshacer.",
+                "Deshacer", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+    
     private void guardarDatosCSV() {
         ListaSimple<Persistible> listaPersistible = new ListaSimple<>();
         GestorCSV.guardar("propietarios.csv", listaPersistible);
@@ -168,6 +190,11 @@ public class MenuPrincipal extends JFrame {
 
     /** TODO: reemplazar por la apertura del panel real de cada modulo. */
     private void abrir(String modulo) {
+        if (modulo.equals("Historial y deshacer")) {
+            ejecutarDeshacer();
+            return;
+        }
+
         JOptionPane.showMessageDialog(this, "Módulo \"" + modulo + "\" aún no implementado.",
             modulo, JOptionPane.INFORMATION_MESSAGE);
     }
