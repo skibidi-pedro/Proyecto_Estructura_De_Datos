@@ -7,5 +7,7 @@ package inmobiliaria.contratos.modelo;
  * Reglas: RN-03
  */
 public enum EstadoContrato {
-    // TODO: valores
+    PENDIENTE,   // creado, falta activarlo (expediente completo)
+    VIGENTE,
+    FINALIZADO
 }
