@@ -4,16 +4,29 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import inmobiliaria.cobranza.servicio.MoraService;
+import inmobiliaria.cobranza.servicio.PagoService;
+import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
-import inmobiliaria.nucleo.persistencia.GestorCSV;
-import inmobiliaria.nucleo.persistencia.Persistible;
 import inmobiliaria.nucleo.historial.Historial;
+import inmobiliaria.propiedades.modelo.Edificio;
+import inmobiliaria.propiedades.modelo.Propietario;
+import inmobiliaria.propiedades.servicio.PropiedadService;
+import inmobiliaria.ui.Dialogos;
+import inmobiliaria.ui.PanelCobranza;
+import inmobiliaria.ui.PanelContratos;
+import inmobiliaria.ui.PanelUnidades;
 
 /**
  * Menu principal en Swing. Primero se selecciona un propietario; en la pantalla
  * siguiente se selecciona o registra una de sus propiedades (panel pequeno,
  * arriba a la izquierda). Los modulos y reportes se habilitan recien cuando hay
  * una propiedad seleccionada. El historial tiene su propio boton, siempre visible.
+ *
+ * Una "propiedad" es un edificio del propietario (Propietario > Edificio > Unidad).
+ *
+ * Modulos conectados: Unidades, Contratos, Cobro de rentas y mora.
+ * En proceso (su servicio todavia esta vacio): Arrendatarios, Documentos, Mantenimiento.
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
@@ -27,41 +40,52 @@ public class MenuPrincipal extends JFrame {
     private final CardLayout cartas = new CardLayout();
     private final JPanel contenedor = new JPanel(cartas);
 
-    // TODO: reemplazar por los propietarios cargados desde CSV / PropiedadService
-    private final DefaultComboBoxModel<String> propietarios = new DefaultComboBoxModel<>();
-    private final JComboBox<String> comboPropietarios = new JComboBox<>(propietarios);
+    // Servicios compartidos (los crea Main y carga los CSV)
+    private final Historial historial;
+    private final PropiedadService propiedades;
+    private final ContratoService contratos;
+    private final PagoService pagos;
+    private final MoraService mora;
+
+    private final DefaultComboBoxModel<Propietario> modeloPropietarios = new DefaultComboBoxModel<>();
+    private final JComboBox<Propietario> comboPropietarios = new JComboBox<>(modeloPropietarios);
     private final JLabel lblPropietario = new JLabel(" ");
 
-    // TODO: reemplazar por las propiedades del propietario (PropiedadService.unidadesDePropietario)
-    private final DefaultComboBoxModel<String> propiedades = new DefaultComboBoxModel<>();
-    private final JComboBox<String> comboPropiedades = new JComboBox<>(propiedades);
+    private final DefaultComboBoxModel<Edificio> modeloPropiedades = new DefaultComboBoxModel<>();
+    private final JComboBox<Edificio> comboPropiedades = new JComboBox<>(modeloPropiedades);
     private final JLabel lblPropiedad = new JLabel("Ninguna propiedad seleccionada");
-    private String propietarioActual = null;
-    private boolean propiedadElegida = false;
+    private Propietario propietarioActual = null;
+    private Edificio propiedadActual = null;
 
     private final JButton[] botonesModulos;
     private final JMenu menuModulos = new JMenu("Módulos");
     private final JMenu menuReportes = new JMenu("Reportes");
     private final JMenuItem itemCambiar = new JMenuItem("Cambiar propietario");
-    // Instancia del historial para manejar la pila de operaciones y el deshacer
-    private final Historial historial = new Historial();
 
     // Modulos que dependen de la propiedad seleccionada
     private final Opcion[] opciones = {
-        new Opcion("Arrendatarios", "Datos personales y avales"),
+        new Opcion("Unidades", "Departamentos, casas, locales"),
+        new Opcion("Arrendatarios", "Datos y avales (en proceso)"),
         new Opcion("Contratos", "Alta, renovación y finalización"),
-        new Opcion("Documentos", "Expediente por arrendatario"),
+        new Opcion("Documentos", "Expediente (en proceso)"),
         new Opcion("Cobro de rentas y mora", "Cuotas, pagos y recibos"),
-        new Opcion("Mantenimiento", "Solicitudes de reparación"),
+        new Opcion("Mantenimiento", "Solicitudes (en proceso)"),
     };
 
-    // Reportes y alertas: pendientes de implementar
+    // Reportes y alertas: pendientes de conectar
     private final String[] reportes = {
         "Ingresos", "Morosidad", "Ocupación", "Alertas",
     };
 
-    public MenuPrincipal() {
+    public MenuPrincipal(Historial historial, PropiedadService propiedades, ContratoService contratos,
+                         PagoService pagos, MoraService mora) {
         super("Gestión Inmobiliaria - Grupo 6");
+        this.historial = historial;
+        this.propiedades = propiedades;
+        this.contratos = contratos;
+        this.pagos = pagos;
+        this.mora = mora;
+
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent e) { salir(); }
@@ -74,8 +98,9 @@ public class MenuPrincipal extends JFrame {
         add(contenedor, BorderLayout.CENTER);
         add(crearPanelHistorial(), BorderLayout.SOUTH);
 
+        recargarPropietarios();
         mostrarSeleccion();
-        setSize(640, 460);
+        setSize(660, 520);
         setLocationRelativeTo(null);
     }
 
@@ -105,32 +130,43 @@ public class MenuPrincipal extends JFrame {
         return p;
     }
 
+    private void recargarPropietarios() {
+        modeloPropietarios.removeAllElements();
+        ListaSimple<Propietario> lista = propiedades.listarPropietarios();
+        for (int i = 0; i < lista.getTamano(); i++) {
+            modeloPropietarios.addElement(lista.obtener(i));
+        }
+    }
+
     private void nuevoPropietario() {
-        // TODO: delegar el alta a PropiedadService (RN-01: identificador unico)
-        String nombre = JOptionPane.showInputDialog(this, "Nombre del propietario:");
-        if (nombre != null && !nombre.isBlank()) {
-            propietarios.addElement(nombre.trim());
-            propietarios.setSelectedItem(nombre.trim());
-            // Registramos la operacion en la pila del historial
-            historial.registrarOperacion("Nuevo propietario registrado: " + nombre.trim());
+        JTextField codigo = Dialogos.texto("");
+        JTextField nombre = Dialogos.texto("");
+        if (!Dialogos.formulario(this, "Nuevo propietario",
+                new String[] { "Código", "Nombre" }, new JComponent[] { codigo, nombre })) return;
+        try {
+            // RN-01 (código único) y el registro en el historial los hace PropiedadService
+            Propietario p = propiedades.registrarPropietario(codigo.getText(), nombre.getText());
+            recargarPropietarios();
+            modeloPropietarios.setSelectedItem(propiedades.buscarPropietario(p.getCodigo()));
+        } catch (IllegalArgumentException ex) {
+            Dialogos.error(this, ex.getMessage());
         }
     }
 
     private void continuarConPropietario() {
-        Object sel = comboPropietarios.getSelectedItem();
+        Propietario sel = (Propietario) comboPropietarios.getSelectedItem();
         if (sel == null) {
             JOptionPane.showMessageDialog(this, "Seleccione o cree un propietario.",
                 "Propietario", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String propietario = sel.toString();
         // Si cambia de propietario, la propiedad elegida deja de valer
-        if (!propietario.equals(propietarioActual)) {
-            propietarioActual = propietario;
-            propiedades.removeAllElements();
-            ponerPropiedadElegida(false, null);
+        if (propietarioActual == null || !sel.getCodigo().equals(propietarioActual.getCodigo())) {
+            propietarioActual = sel;
+            ponerPropiedadElegida(null);
         }
-        lblPropietario.setText("Propietario: " + propietario);
+        recargarPropiedades();
+        lblPropietario.setText("Propietario: " + sel);
         itemCambiar.setEnabled(true);
         cartas.show(contenedor, CARD_MODULOS);
     }
@@ -184,7 +220,7 @@ public class MenuPrincipal extends JFrame {
         c.anchor = GridBagConstraints.WEST;
 
         c.gridx = 0; c.gridy = 0; c.gridwidth = 3;
-        comboPropiedades.setPreferredSize(new Dimension(220, 24));
+        comboPropiedades.setPreferredSize(new Dimension(260, 24));
         p.add(comboPropiedades, c);
 
         c.gridy = 1; c.gridwidth = 1;
@@ -208,42 +244,54 @@ public class MenuPrincipal extends JFrame {
         return p;
     }
 
-    private void nuevaPropiedad() {
-        // TODO: delegar el alta a PropiedadService (RN-01: identificador unico)
-        String nombre = JOptionPane.showInputDialog(this, "Nombre o dirección de la propiedad:");
-        if (nombre == null || nombre.isBlank()) return;
-        String limpio = nombre.trim();
-        if (propiedades.getIndexOf(limpio) >= 0) {
-            JOptionPane.showMessageDialog(this, "Ya existe la propiedad \"" + limpio + "\".",
-                "Propiedad", JOptionPane.WARNING_MESSAGE);
-            return;
+    // Edificios del propietario actual
+    private void recargarPropiedades() {
+        modeloPropiedades.removeAllElements();
+        ListaSimple<Edificio> lista = propiedades.edificiosDe(propietarioActual.getCodigo());
+        for (int i = 0; i < lista.getTamano(); i++) {
+            modeloPropiedades.addElement(lista.obtener(i));
         }
-        propiedades.addElement(limpio);
-        propiedades.setSelectedItem(limpio);
-        historial.registrarOperacion("Nueva propiedad registrada: " + limpio
-            + " (propietario " + propietarioActual + ")");
-        ponerPropiedadElegida(true, limpio);
+        if (propiedadActual != null) modeloPropiedades.setSelectedItem(propiedadActual);
+    }
+
+    private void nuevaPropiedad() {
+        JTextField codigo = Dialogos.texto("");
+        JTextField nombre = Dialogos.texto("");
+        JTextField direccion = Dialogos.texto("");
+        if (!Dialogos.formulario(this, "Nueva propiedad",
+                new String[] { "Código", "Nombre", "Dirección" },
+                new JComponent[] { codigo, nombre, direccion })) return;
+        try {
+            Edificio e = propiedades.registrarEdificio(propietarioActual.getCodigo(),
+                    codigo.getText(), nombre.getText(), direccion.getText());
+            recargarPropiedades();
+            comboPropiedades.setSelectedItem(propiedades.buscarEdificio(e.getCodigo()));
+            ponerPropiedadElegida(propiedades.buscarEdificio(e.getCodigo()));
+        } catch (IllegalArgumentException ex) {
+            Dialogos.error(this, ex.getMessage());
+        }
     }
 
     private void elegirPropiedad() {
-        Object sel = comboPropiedades.getSelectedItem();
+        Edificio sel = (Edificio) comboPropiedades.getSelectedItem();
         if (sel == null) {
             JOptionPane.showMessageDialog(this, "Seleccione o registre una propiedad.",
                 "Propiedad", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        ponerPropiedadElegida(true, sel.toString());
+        ponerPropiedadElegida(sel);
     }
 
-    // Habilita o deshabilita modulos y reportes segun haya propiedad elegida
-    private void ponerPropiedadElegida(boolean elegida, String nombre) {
-        propiedadElegida = elegida;
-        lblPropiedad.setText(elegida ? "Elegida: " + nombre : "Ninguna propiedad seleccionada");
+    // Habilita o deshabilita modulos y reportes segun haya propiedad elegida (null = ninguna)
+    private void ponerPropiedadElegida(Edificio elegida) {
+        propiedadActual = elegida;
+        lblPropiedad.setText(elegida != null ? "Elegida: " + elegida.getNombre()
+                                             : "Ninguna propiedad seleccionada");
         for (JButton b : botonesModulos) {
-            b.setEnabled(elegida);
+            b.setEnabled(elegida != null);
         }
-        menuModulos.setEnabled(elegida);
-        menuReportes.setEnabled(elegida);
+        menuModulos.setEnabled(elegida != null);
+        menuReportes.setEnabled(elegida != null);
     }
 
     // ---------- Boton de historial, aparte de los modulos ----------
@@ -262,7 +310,11 @@ public class MenuPrincipal extends JFrame {
         JMenu archivo = new JMenu("Archivo");
         itemCambiar.addActionListener(e -> mostrarSeleccion());
         JMenuItem guardar = new JMenuItem("Guardar datos (CSV)");
-        guardar.addActionListener(e -> guardarDatosCSV());
+        guardar.addActionListener(e -> {
+            guardarTodo();
+            JOptionPane.showMessageDialog(this, "Datos guardados exitosamente en CSV.",
+                "Persistencia", JOptionPane.INFORMATION_MESSAGE);
+        });
 
         //Opcion de deshacer en la barra de menu
         JMenuItem itemDeshacer = new JMenuItem("Deshacer ultima operacion");
@@ -290,29 +342,39 @@ public class MenuPrincipal extends JFrame {
         return barra;
     }
 
+    // OJO: Historial solo guarda descripciones; sacar la ultima NO revierte los datos.
+    // TODO (Integrante 1): que Operacion sepa como revertirse.
     private void ejecutarDeshacer() {
         Object ultimaOp = historial.deshacer();
         if (ultimaOp != null) {
-            JOptionPane.showMessageDialog(this, "Operacion deshecha con exito:\n" + ultimaOp.toString(),
-            "Deshacer", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Se quitó del historial la última operación:\n"
+                + ultimaOp + "\n\nAviso: los datos no se revierten todavía.",
+            "Historial", JOptionPane.INFORMATION_MESSAGE);
         } else {
-            JOptionPane.showMessageDialog(this, "No hay operaciones registradas para deshacer.",
-                "Deshacer", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "No hay operaciones registradas en el historial.",
+                "Historial", JOptionPane.WARNING_MESSAGE);
         }
     }
 
-    private void guardarDatosCSV() {
-        ListaSimple<Persistible> listaPersistible = new ListaSimple<>();
-        GestorCSV.guardar("propietarios.csv", listaPersistible);
-        JOptionPane.showMessageDialog(this, "Datos guardados exitosamente en CSV.",
-            "Persistencia", JOptionPane.INFORMATION_MESSAGE);
+    private void guardarTodo() {
+        propiedades.guardar();
+        contratos.guardar();
+        pagos.guardar();
     }
 
-    /** TODO: reemplazar por la apertura del panel real de cada modulo. */
     private void abrir(String modulo) {
-        if (!propiedadElegida) return;
-        JOptionPane.showMessageDialog(this, "Módulo \"" + modulo + "\" aún no implementado.",
-            modulo, JOptionPane.INFORMATION_MESSAGE);
+        if (propiedadActual == null) return;
+        switch (modulo) {
+            case "Unidades" ->
+                new PanelUnidades(this, propiedades, propiedadActual).setVisible(true);
+            case "Contratos" ->
+                new PanelContratos(this, contratos, propiedades, pagos, mora, propiedadActual).setVisible(true);
+            case "Cobro de rentas y mora" ->
+                new PanelCobranza(this, contratos, pagos, mora, propiedades, propiedadActual).setVisible(true);
+            default -> JOptionPane.showMessageDialog(this,
+                "El módulo \"" + modulo + "\" está en proceso: sus modelos existen pero falta su servicio.",
+                modulo, JOptionPane.INFORMATION_MESSAGE);
+        }
     }
 
     /** TODO: conectar con ReporteService y AlertaService. */
@@ -322,12 +384,10 @@ public class MenuPrincipal extends JFrame {
     }
 
     private void salir() {
-        int r = JOptionPane.showConfirmDialog(this, "¿Desea salir?", "Salir",
+        int r = JOptionPane.showConfirmDialog(this, "¿Desea salir? Se guardarán los datos.", "Salir",
             JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
-            // TODO: guardar datos en CSV antes de cerrar (2.8)
-            ListaSimple<Persistible> listaPersistible = new ListaSimple<>();
-            GestorCSV.guardar("propietarios.csv", listaPersistible);
+            guardarTodo();
             dispose();
             System.exit(0);
         }
