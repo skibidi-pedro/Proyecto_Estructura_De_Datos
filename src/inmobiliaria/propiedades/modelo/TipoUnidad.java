@@ -6,5 +6,8 @@ package inmobiliaria.propiedades.modelo;
  * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
  */
 public enum TipoUnidad {
-    // TODO: valores
+    DEPARTAMENTO,
+    CASA,
+    LOCAL,
+    CUARTO
 }

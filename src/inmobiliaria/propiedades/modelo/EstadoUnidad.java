@@ -7,5 +7,7 @@ package inmobiliaria.propiedades.modelo;
  * Reglas: RN-02
  */
 public enum EstadoUnidad {
-    // TODO: valores
+    DISPONIBLE,
+    ALQUILADA,
+    EN_MANTENIMIENTO
 }
