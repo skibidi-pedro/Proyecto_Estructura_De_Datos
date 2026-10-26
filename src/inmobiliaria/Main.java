@@ -1,20 +1,40 @@
 package inmobiliaria;
 
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
-import inmobiliaria.nucleo.estructuras.ListaSimple;
-import inmobiliaria.nucleo.persistencia.GestorCSV;
+import inmobiliaria.cobranza.servicio.MoraService;
+import inmobiliaria.cobranza.servicio.PagoService;
+import inmobiliaria.contratos.servicio.ContratoService;
+import inmobiliaria.nucleo.historial.Historial;
+import inmobiliaria.propiedades.servicio.PropiedadService;
 
 /**
- * Punto de entrada. Arranca el menu Swing.
+ * Punto de entrada. Crea los servicios, carga los CSV (2.8) y arranca el menu Swing.
+ * Todos los servicios comparten el mismo Historial.
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
 public class Main {
     public static void main(String[] args) {
-        // TODO: cargar CSV antes de mostrar el menu (2.8)
-        ListaSimple<String> lineasPropietarios = new ListaSimple<>();
-        GestorCSV.cargar("propietarios.csv", lineasPropietarios);
+        Historial historial = new Historial();
+        PropiedadService propiedades = new PropiedadService(historial);
+        ContratoService contratos = new ContratoService(historial);
+        PagoService pagos = new PagoService(historial);
+        MoraService mora = new MoraService(pagos);
 
-        SwingUtilities.invokeLater(() -> new MenuPrincipal().setVisible(true));
+        try {
+            propiedades.cargar();
+            contratos.cargar();
+            pagos.cargar();
+        } catch (RuntimeException e) {
+            // Si un CSV esta danado se avisa y se sale: seguir y guardar al cerrar pisaria los datos
+            JOptionPane.showMessageDialog(null,
+                "No se pudieron cargar los archivos de la carpeta data/:\n" + e,
+                "Error al cargar", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
+
+        SwingUtilities.invokeLater(() ->
+            new MenuPrincipal(historial, propiedades, contratos, pagos, mora).setVisible(true));
     }
 }
