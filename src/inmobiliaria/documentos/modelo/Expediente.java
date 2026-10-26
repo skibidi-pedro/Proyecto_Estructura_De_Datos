@@ -1,11 +1,32 @@
 package inmobiliaria.documentos.modelo;
 
-/**
- * Expediente de documentos por arrendatario.
- *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
- * Reglas: RN-06
- */
+import java.util.ArrayList;
+import java.util.List;
+
 public class Expediente {
-    // TODO
+    private String documentoIdentidadArrendatario;
+    private List<Documento> documentosRequeridos;
+
+    public Expediente(String documentoIdentidadArrendatario) {
+        this.documentoIdentidadArrendatario = documentoIdentidadArrendatario;
+        this.documentosRequeridos = new ArrayList<>();
+    }
+
+    public void agregarDocumento(Documento doc) {
+        documentosRequeridos.add(doc);
+    }
+
+    // RN-06: Verificación automática del expediente completo antes de activar contrato
+    public boolean estaCompleto() {
+        boolean tieneIdentidad = false;
+        boolean tieneContrato = false;
+        
+        for (Documento doc : documentosRequeridos) {
+            if (doc.getEstado() == EstadoDocumento.RECIBIDO) {
+                if (doc.getTipo() == TipoDocumento.IDENTIDAD) tieneIdentidad = true;
+                if (doc.getTipo() == TipoDocumento.CONTRATO_FIRMADO) tieneContrato = true;
+            }
+        }
+        return tieneIdentidad && tieneContrato;
+    }
 }

@@ -1,11 +1,23 @@
 package inmobiliaria.arrendatarios.modelo;
 
-/**
- * Datos personales, contacto, ocupacion y estado (ACTIVO/MOROSO).
- *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
- * Reglas: RN-01, RN-11
- */
 public class Arrendatario {
-    // TODO
+    private String documentoIdentidad;
+    private String nombresCompletos;
+    private String telefono;
+    private String correo;
+    private String ocupacion;
+    private Aval aval;
+
+    public Arrendatario(String documentoIdentidad, String nombresCompletos, String telefono, String correo, String ocupacion, Aval aval) {
+        this.documentoIdentidad = documentoIdentidad;
+        this.nombresCompletos = nombresCompletos;
+        this.telefono = telefono;
+        this.correo = correo;
+        this.ocupacion = ocupacion;
+        this.aval = aval;
+    }
+
+    public String getDocumentoIdentidad() { return documentoIdentidad; }
+    public String getNombresCompletos() { return nombresCompletos; }
+    // Puedes generar el resto de getters y setters con Alt + Insert en NetBeans
 }

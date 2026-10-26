@@ -1,10 +1,17 @@
 package inmobiliaria.arrendatarios.modelo;
 
-/**
- * Aval o garante del arrendatario.
- *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
- */
 public class Aval {
-    // TODO
+    private String documentoIdentidad;
+    private String nombresCompletos;
+    private double ingresosComprobados;
+
+    public Aval(String documentoIdentidad, String nombresCompletos, double ingresosComprobados) {
+        this.documentoIdentidad = documentoIdentidad;
+        this.nombresCompletos = nombresCompletos;
+        this.ingresosComprobados = ingresosComprobados;
+    }
+
+    public String getDocumentoIdentidad() { return documentoIdentidad; }
+    public String getNombresCompletos() { return nombresCompletos; }
+    public double getIngresosComprobados() { return ingresosComprobados; }
 }
