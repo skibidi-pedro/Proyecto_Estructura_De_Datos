@@ -11,16 +11,6 @@ import inmobiliaria.nucleo.historial.Historial;
 import inmobiliaria.nucleo.persistencia.GestorCSV;
 import inmobiliaria.nucleo.persistencia.Persistible;
 
-/**
- * Registro de pagos y emision de recibos (2.5).
- *
- * Guarda las cuotas, los pagos y los recibos. Recibe el Contrato como
- * parametro (igual que ContratoService recibe datos de otros modulos), asi
- * no depende de ContratoService.
- *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
- * Reglas: RN-07, RN-09, RN-10
- */
 public class PagoService {
     private static final String ARCHIVO_CUOTAS = "cuotas.csv";
     private static final String ARCHIVO_PAGOS = "pagos.csv";
@@ -29,14 +19,13 @@ public class PagoService {
     private ListaSimple<Cuota> cuotas = new ListaSimple<>();
     private ListaSimple<Pago> pagos = new ListaSimple<>();
     private ListaSimple<Recibo> recibos = new ListaSimple<>();
-    private int ultimoRecibo = 0;      // el siguiente recibo es ultimoRecibo + 1 (RN-10)
+    private int ultimoRecibo = 0;
     private Historial historial;
 
     public PagoService(Historial historial) {
         this.historial = historial;
     }
 
-    // ---------- Generar cuotas (RN-07): al activar el contrato ----------
     public ListaSimple<Cuota> generarCuotas(Contrato c) {
         if (c.getEstado() != EstadoContrato.VIGENTE)
             throw new IllegalArgumentException("Solo se generan cuotas de un contrato vigente");
@@ -50,7 +39,6 @@ public class PagoService {
         return nuevas;
     }
 
-    // Al renovar: cuotas del periodo nuevo. fechaFinAnterior es la fecha fin ANTES de renovar.
     public ListaSimple<Cuota> generarCuotasRenovacion(Contrato c, LocalDate fechaFinAnterior) {
         if (c.getEstado() != EstadoContrato.VIGENTE)
             throw new IllegalArgumentException("Solo se generan cuotas de un contrato vigente");
@@ -69,7 +57,6 @@ public class PagoService {
         }
     }
 
-    // ---------- Registrar pago total o parcial y emitir recibo (RN-09, RN-10) ----------
     public Recibo registrarPago(String numeroContrato, int numeroCuota, double monto, LocalDate fecha) {
         Cuota cuota = buscarCuota(numeroContrato, numeroCuota);
         if (cuota == null)
@@ -81,14 +68,14 @@ public class PagoService {
             throw new IllegalArgumentException("La cuota ya esta pagada");
 
         monto = Math.round(monto * 100.0) / 100.0;
-        if (monto <= 0)                                                // RN-09
+        if (monto <= 0)
             throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
-        if (monto > cuota.getSaldo())                                  // RN-09
+        if (monto > cuota.getSaldo())
             throw new IllegalArgumentException("El pago (S/ " + monto
                     + ") supera el saldo de la cuota (S/ " + cuota.getSaldo() + ")");
 
         cuota.aplicarPago(monto);
-        ultimoRecibo++;                                                // RN-10: correlativo
+        ultimoRecibo++;
         Recibo recibo = new Recibo(ultimoRecibo, numeroContrato, numeroCuota, fecha,
                 monto, cuota.getSaldo());
         recibos.agregar(recibo);
@@ -99,7 +86,6 @@ public class PagoService {
         return recibo;
     }
 
-    // ---------- Consultas ----------
     public Cuota buscarCuota(String numeroContrato, int numeroCuota) {
         for (int i = 0; i < cuotas.getTamano(); i++) {
             Cuota c = cuotas.obtener(i);
@@ -133,7 +119,6 @@ public class PagoService {
         return null;
     }
 
-    // Suma de los saldos de las cuotas del contrato (solo renta, sin recargo por mora)
     public double deudaPendiente(String numeroContrato) {
         double total = 0;
         ListaSimple<Cuota> lista = cuotasDe(numeroContrato);
@@ -147,7 +132,6 @@ public class PagoService {
     public ListaSimple<Pago> listarPagos() { return pagos; }
     public ListaSimple<Recibo> listarRecibos() { return recibos; }
 
-    // ---------- Persistencia (cuotas.csv, pagos.csv, recibos.csv) ----------
     public void cargar() {
         ListaSimple<String> lineas = new ListaSimple<>();
         GestorCSV.cargar(ARCHIVO_CUOTAS, lineas);
@@ -171,7 +155,7 @@ public class PagoService {
             Recibo r = new Recibo();
             r.desdeLineaCSV(lineas.obtener(i));
             recibos.agregar(r);
-            if (r.getNumero() > ultimoRecibo) ultimoRecibo = r.getNumero();   // sigue la numeracion
+            if (r.getNumero() > ultimoRecibo) ultimoRecibo = r.getNumero();
         }
     }
 

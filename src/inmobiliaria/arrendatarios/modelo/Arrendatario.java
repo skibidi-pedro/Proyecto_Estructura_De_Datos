@@ -19,5 +19,4 @@ public class Arrendatario {
 
     public String getDocumentoIdentidad() { return documentoIdentidad; }
     public String getNombresCompletos() { return nombresCompletos; }
-    // Puedes generar el resto de getters y setters con Alt + Insert en NetBeans
 }

@@ -17,21 +17,6 @@ import inmobiliaria.ui.PanelCobranza;
 import inmobiliaria.ui.PanelContratos;
 import inmobiliaria.ui.PanelUnidades;
 
-/**
- * Menu principal en Swing. Primero se selecciona un propietario; en la pantalla
- * siguiente se selecciona o registra una de sus propiedades (panel pequeno,
- * arriba a la izquierda). Los modulos y reportes se habilitan recien cuando hay
- * una propiedad seleccionada. Los codigos (propietario, propiedad, unidad, contrato) se asignan
- * solos y no se muestran. Cada modulo abre en su propia ventana, y se pueden abrir varias a la vez.
- * "Historial y deshacer" se quito: queda como opcion de refinamiento posterior.
- *
- * Una "propiedad" es un edificio del propietario (Propietario > Edificio > Unidad).
- *
- * Modulos conectados: Unidades, Contratos, Cobro de rentas y mora.
- * En proceso (su servicio todavia esta vacio): Arrendatarios, Documentos, Mantenimiento.
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
 public class MenuPrincipal extends JFrame {
 
     private static final String CARD_SELECCION = "seleccion";
@@ -42,7 +27,6 @@ public class MenuPrincipal extends JFrame {
     private final CardLayout cartas = new CardLayout();
     private final JPanel contenedor = new JPanel(cartas);
 
-    // Servicios compartidos (los crea Main y carga los CSV)
     private final PropiedadService propiedades;
     private final ContratoService contratos;
     private final PagoService pagos;
@@ -63,7 +47,6 @@ public class MenuPrincipal extends JFrame {
     private final JMenu menuReportes = new JMenu("Reportes");
     private final JMenuItem itemCambiar = new JMenuItem("Cambiar propietario");
 
-    // Modulos que dependen de la propiedad seleccionada
     private final Opcion[] opciones = {
         new Opcion("Unidades", "Departamentos, casas, locales"),
         new Opcion("Arrendatarios", "Datos y avales (en proceso)"),
@@ -73,7 +56,6 @@ public class MenuPrincipal extends JFrame {
         new Opcion("Mantenimiento", "Solicitudes (en proceso)"),
     };
 
-    // Reportes y alertas: pendientes de conectar
     private final String[] reportes = {
         "Ingresos", "Morosidad", "Ocupación", "Alertas",
     };
@@ -103,7 +85,6 @@ public class MenuPrincipal extends JFrame {
         setLocationRelativeTo(null);
     }
 
-    // ---------- Pantalla inicial: seleccionar propietario ----------
     private JPanel crearPanelSeleccion() {
         JPanel p = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
@@ -143,7 +124,6 @@ public class MenuPrincipal extends JFrame {
         if (!Dialogos.formulario(this, "Nuevo propietario",
                 new String[] { "Nombre" }, new JComponent[] { nombre })) return;
         try {
-            // El código se asigna solo y queda en memoria; RN-01 (código único) la valida PropiedadService
             String codigo = GeneradorCodigo.siguiente("PRO",
                     Dialogos.codigos(propiedades.listarPropietarios(), Propietario::getCodigo));
             Propietario p = propiedades.registrarPropietario(codigo, nombre.getText());
@@ -162,7 +142,6 @@ public class MenuPrincipal extends JFrame {
                 "Propietario", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        // Si cambia de propietario, la propiedad elegida deja de valer
         if (propietarioActual == null || !sel.getCodigo().equals(propietarioActual.getCodigo())) {
             propietarioActual = sel;
             ponerPropiedadElegida(null);
@@ -180,7 +159,6 @@ public class MenuPrincipal extends JFrame {
         cartas.show(contenedor, CARD_SELECCION);
     }
 
-    // ---------- Pantalla principal: propiedad (pequena, arriba a la izquierda) y modulos ----------
     private JPanel crearPanelModulos() {
         JPanel p = new JPanel(new BorderLayout());
 
@@ -213,7 +191,6 @@ public class MenuPrincipal extends JFrame {
         return p;
     }
 
-    // Panel compacto: combo + Nueva + Elegir
     private JPanel crearPanelPropiedad() {
         JPanel p = new JPanel(new GridBagLayout());
         p.setBorder(BorderFactory.createTitledBorder("Propiedad"));
@@ -242,12 +219,10 @@ public class MenuPrincipal extends JFrame {
         lblPropiedad.setFont(lblPropiedad.getFont().deriveFont(Font.ITALIC, 11f));
         p.add(lblPropiedad, c);
 
-        // Que el panel no se estire: queda chico en la esquina
         p.setMaximumSize(p.getPreferredSize());
         return p;
     }
 
-    // Edificios del propietario actual
     private void recargarPropiedades() {
         modeloPropiedades.removeAllElements();
         ListaSimple<Edificio> lista = propiedades.edificiosDe(propietarioActual.getCodigo());
@@ -287,7 +262,6 @@ public class MenuPrincipal extends JFrame {
         ponerPropiedadElegida(sel);
     }
 
-    // Habilita o deshabilita modulos y reportes segun haya propiedad elegida (null = ninguna)
     private void ponerPropiedadElegida(Edificio elegida) {
         propiedadActual = elegida;
         lblPropiedad.setText(elegida != null ? "Elegida: " + elegida.getNombre()
@@ -322,7 +296,6 @@ public class MenuPrincipal extends JFrame {
         }
         barra.add(menuModulos);
 
-        // Reportes ocupa el lugar que tenia Ayuda
         for (String r : reportes) {
             JMenuItem item = new JMenuItem(r);
             item.addActionListener(e -> reportePendiente(r));
@@ -353,7 +326,6 @@ public class MenuPrincipal extends JFrame {
         }
     }
 
-    /** TODO: conectar con ReporteService y AlertaService. */
     private void reportePendiente(String reporte) {
         JOptionPane.showMessageDialog(this, "El reporte \"" + reporte + "\" está pendiente.",
             "Reportes", JOptionPane.INFORMATION_MESSAGE);

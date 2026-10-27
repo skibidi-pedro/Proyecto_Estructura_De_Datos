@@ -4,20 +4,13 @@ import java.time.LocalDate;
 import inmobiliaria.nucleo.persistencia.Persistible;
 import inmobiliaria.nucleo.util.Fechas;
 
-/**
- * Pago total o parcial.
- *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
- * Reglas: RN-09
- */
 public class Pago implements Persistible {
     private String numeroContrato;
     private int numeroCuota;
     private LocalDate fecha;
     private double monto;
-    private int numeroRecibo;        // recibo que se emitio por este pago (RN-10)
+    private int numeroRecibo;
 
-    // Vacio, para poder usar desdeLineaCSV al cargar
     public Pago() {
     }
 

@@ -3,12 +3,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
-/**
- * Utilidades de fechas compartidas por todos los modulos.
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
-
 
 public class Fechas {
     private static final DateTimeFormatter FORMATO = DateTimeFormatter.ofPattern("yyyy-MM-dd");

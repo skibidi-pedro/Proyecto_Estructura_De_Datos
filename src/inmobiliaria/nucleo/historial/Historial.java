@@ -1,12 +1,6 @@
 package inmobiliaria.nucleo.historial;
 import inmobiliaria.nucleo.estructuras.Pila;
 
-/**
- * Bitacora de ultimas operaciones y deshacer la ultima (2.7).
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
-
 public class Historial {
     private Pila<Operacion> pilaOperaciones;
 

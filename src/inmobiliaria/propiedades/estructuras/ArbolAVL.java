@@ -2,12 +2,6 @@ package inmobiliaria.propiedades.estructuras;
 
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 
-/**
- * Arbol AVL generico (busquedas por codigo, precio, etc.).
- * K es la clave (ej. el codigo) y V lo que se guarda.
- *
- * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
- */
 public class ArbolAVL<K extends Comparable<K>, V> {
 
     private static class Nodo<K, V> {
@@ -33,7 +27,6 @@ public class ArbolAVL<K extends Comparable<K>, V> {
         return raiz == null;
     }
 
-    // ---------- Buscar ----------
     public V buscar(K clave) {
         Nodo<K, V> actual = raiz;
         while (actual != null) {
@@ -44,7 +37,6 @@ public class ArbolAVL<K extends Comparable<K>, V> {
         return null;
     }
 
-    // ---------- Insertar (false si la clave ya existe) ----------
     public boolean insertar(K clave, V valor) {
         if (buscar(clave) != null) return false;
         raiz = insertar(raiz, clave, valor);
@@ -59,7 +51,6 @@ public class ArbolAVL<K extends Comparable<K>, V> {
         return balancear(n);
     }
 
-    // ---------- Eliminar (false si no existe) ----------
     public boolean eliminar(K clave) {
         if (buscar(clave) == null) return false;
         raiz = eliminar(raiz, clave);
@@ -76,7 +67,6 @@ public class ArbolAVL<K extends Comparable<K>, V> {
         } else {
             if (n.izq == null) return n.der;
             if (n.der == null) return n.izq;
-            // dos hijos: lo reemplazo por el menor de la derecha
             Nodo<K, V> menor = n.der;
             while (menor.izq != null) menor = menor.izq;
             n.clave = menor.clave;
@@ -86,7 +76,6 @@ public class ArbolAVL<K extends Comparable<K>, V> {
         return balancear(n);
     }
 
-    // ---------- Recorrido en orden (ordenado por clave) ----------
     public ListaSimple<V> enOrden() {
         ListaSimple<V> lista = new ListaSimple<>();
         enOrden(raiz, lista);
@@ -100,7 +89,6 @@ public class ArbolAVL<K extends Comparable<K>, V> {
         enOrden(n.der, lista);
     }
 
-    // ---------- Balanceo ----------
     private int altura(Nodo<K, V> n) {
         return n == null ? 0 : n.altura;
     }
@@ -134,11 +122,11 @@ public class ArbolAVL<K extends Comparable<K>, V> {
     private Nodo<K, V> balancear(Nodo<K, V> n) {
         actualizarAltura(n);
         int b = balance(n);
-        if (b > 1) {                                   // pesado a la izquierda
+        if (b > 1) {
             if (balance(n.izq) < 0) n.izq = rotarIzquierda(n.izq);
             return rotarDerecha(n);
         }
-        if (b < -1) {                                  // pesado a la derecha
+        if (b < -1) {
             if (balance(n.der) > 0) n.der = rotarDerecha(n.der);
             return rotarIzquierda(n);
         }

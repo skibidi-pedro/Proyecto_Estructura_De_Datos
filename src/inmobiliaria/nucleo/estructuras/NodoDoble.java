@@ -1,10 +1,5 @@
 package inmobiliaria.nucleo.estructuras;
 
-/**
- * Nodo de la lista doblemente enlazada.
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
 public class NodoDoble<T> {
     private T dato;
     private NodoDoble<T> siguiente;

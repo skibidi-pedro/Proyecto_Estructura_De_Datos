@@ -30,20 +30,6 @@ import inmobiliaria.propiedades.modelo.EstadoUnidad;
 import inmobiliaria.propiedades.modelo.Unidad;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 
-/**
- * Contratos de la propiedad seleccionada: alta, activacion, renovacion y finalizacion.
- *
- * ContratoService (Integrante 2) no conoce a los demas modulos, asi que aqui se
- * hace el pegado que sus comentarios piden:
- *  - unidad disponible       -> PropiedadService (RN-02)
- *  - arrendatario moroso     -> MoraService (RN-11)
- *  - cambiar estado unidad   -> PropiedadService (ALQUILADA al activar, DISPONIBLE al finalizar)
- *  - cuotas al activar/renovar -> PagoService (RN-07)
- *  - deuda y mora al finalizar -> PagoService y MoraService (RN-13)
- *  - el numero de contrato se asigna solo (CON-001, ...) y no se muestra (columna oculta en la tabla)
- *  - ventana no modal (se pueden abrir varias) con refresco automatico cada segundo
- *  - expediente completo (RN-06): el modulo Documentos esta en proceso, por ahora se confirma a mano.
- */
 public class PanelContratos extends JDialog {
     private final ContratoService contratos;
     private final PropiedadService propiedades;
@@ -107,7 +93,6 @@ public class PanelContratos extends JDialog {
         return false;
     }
 
-    // En la tabla se muestra la direccion de la unidad, no su codigo
     private String direccionDe(String codigoUnidad) {
         Unidad u = propiedades.buscarUnidad(codigoUnidad);
         return u == null ? "(unidad dada de baja)" : u.getDireccion();
@@ -132,7 +117,6 @@ public class PanelContratos extends JDialog {
         return contratos.buscar(numero.toString());
     }
 
-    // ---------- Nuevo (RN-01, 02, 03, 04, 05, 11) ----------
     private void nuevo() {
         ListaSimple<Unidad> todas = propiedades.unidadesDe(edificio.getCodigo());
         JComboBox<Unidad> unidades = new JComboBox<>();
@@ -181,10 +165,8 @@ public class PanelContratos extends JDialog {
         Dialogos.info(this, "Contrato", "Contrato creado para " + doc + " (pendiente de activar).");
     }
 
-    // ---------- Activar (RN-06) + estado de unidad + cuotas (RN-07) ----------
     private void activar() {
         Contrato c = seleccionado();
-        // TODO: reemplazar por ExpedienteService cuando el modulo Documentos este terminado (RN-06)
         boolean completo = Dialogos.confirmar(this, "Expediente",
                 "El expediente del arrendatario " + c.getDocumentoArrendatario() + " esta completo?\n"
                 + "(documento de identidad y contrato firmado)\n\n"
@@ -197,7 +179,6 @@ public class PanelContratos extends JDialog {
                 + "Se generaron " + cuotas.getTamano() + " cuotas mensuales.");
     }
 
-    // ---------- Renovar (RN-12) + cuotas del periodo nuevo ----------
     private void renovar() {
         Contrato c = seleccionado();
         JTextField nuevaFin = Dialogos.texto(Fechas.convertirAString(c.getFechaFin().plusYears(1)));
@@ -216,7 +197,6 @@ public class PanelContratos extends JDialog {
                 + "Se generaron " + nuevas.getTamano() + " cuotas nuevas.");
     }
 
-    // ---------- Finalizar (RN-03, RN-13): liquida la garantia y libera la unidad ----------
     private void finalizar() {
         Contrato c = seleccionado();
         JTextField danos = Dialogos.texto("0");
@@ -234,7 +214,6 @@ public class PanelContratos extends JDialog {
         Dialogos.info(this, "Liquidacion de garantia", liq.toString());
     }
 
-    // Campo de solo lectura para mostrar un dato en el formulario
     private JTextField solo(String texto) {
         JTextField f = Dialogos.texto(texto);
         f.setEditable(false);

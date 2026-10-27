@@ -2,12 +2,6 @@ package inmobiliaria.propiedades.modelo;
 
 import inmobiliaria.nucleo.persistencia.Persistible;
 
-/**
- * Departamento, casa, local o cuarto.
- *
- * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
- * Reglas: RN-01, RN-02
- */
 public class Unidad implements Persistible {
     private String codigo;
     private String codigoEdificio;

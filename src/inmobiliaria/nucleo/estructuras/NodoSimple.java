@@ -1,10 +1,5 @@
 package inmobiliaria.nucleo.estructuras;
 
-/**
- * Nodo de la lista enlazada simple.
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
 public class NodoSimple<T> {
     private T dato;
     private NodoSimple<T> siguiente;

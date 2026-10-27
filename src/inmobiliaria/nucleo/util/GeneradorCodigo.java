@@ -4,13 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 
-/**
- * Asigna codigos en orden (PRO-001, PRO-002, ...) para que el usuario no los escriba ni los vea.
- * Los codigos viven en los objetos en memoria y de ahi salen al escribir los CSV.
- *
- * siguiente() solo propone el codigo; marcarUsado() lo confirma cuando el registro salio bien,
- * asi un alta que falla no deja huecos en la numeracion.
- */
 public class GeneradorCodigo {
     private static final Map<String, Integer> ultimos = new HashMap<>();
 
@@ -23,7 +16,6 @@ public class GeneradorCodigo {
             try {
                 max = Math.max(max, Integer.parseInt(c.substring(inicio.length())));
             } catch (NumberFormatException e) {
-                // codigo con otro formato (de un CSV viejo): no cuenta para la numeracion
             }
         }
         return String.format("%s-%03d", prefijo, max + 1);

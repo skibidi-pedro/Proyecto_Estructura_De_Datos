@@ -15,7 +15,7 @@ public class SolicitudMantenimiento implements Comparable<SolicitudMantenimiento
 
     public Urgencia getNivelUrgencia() { return nivelUrgencia; }
     public String getIdentificadorUnidad() { return identificadorUnidad; }
-    
+
     @Override
     public int compareTo(SolicitudMantenimiento otra) {
         return this.nivelUrgencia.compareTo(otra.nivelUrgencia);

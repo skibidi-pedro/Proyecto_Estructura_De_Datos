@@ -2,11 +2,6 @@ package inmobiliaria.propiedades.modelo;
 
 import inmobiliaria.nucleo.persistencia.Persistible;
 
-/**
- * Entidad edificio.
- *
- * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
- */
 public class Edificio implements Persistible {
     private String codigo;
     private String codigoPropietario;

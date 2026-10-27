@@ -16,11 +16,10 @@ public class Expediente {
         documentosRequeridos.add(doc);
     }
 
-    // RN-06: Verificación automática del expediente completo antes de activar contrato
     public boolean estaCompleto() {
         boolean tieneIdentidad = false;
         boolean tieneContrato = false;
-        
+
         for (Documento doc : documentosRequeridos) {
             if (doc.getEstado() == EstadoDocumento.RECIBIDO) {
                 if (doc.getTipo() == TipoDocumento.IDENTIDAD) tieneIdentidad = true;

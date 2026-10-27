@@ -3,7 +3,6 @@ package inmobiliaria.arrendatarios.estructuras;
 import inmobiliaria.arrendatarios.modelo.Arrendatario;
 
 public class TablaHash {
-    // Clase interna para el encadenamiento
     private class Nodo {
         Arrendatario arrendatario;
         Nodo siguiente;
@@ -51,6 +50,6 @@ public class TablaHash {
             }
             actual = actual.siguiente;
         }
-        return null; // No encontrado
+        return null;
     }
 }

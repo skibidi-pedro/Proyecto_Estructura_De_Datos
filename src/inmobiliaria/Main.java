@@ -8,12 +8,6 @@ import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.nucleo.historial.Historial;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 
-/**
- * Punto de entrada. Crea los servicios, carga los CSV (2.8) y arranca el menu Swing.
- * Los servicios siguen compartiendo el Historial (el menu ya no lo muestra: refinamiento posterior).
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
 public class Main {
     public static void main(String[] args) {
         Historial historial = new Historial();
@@ -27,7 +21,6 @@ public class Main {
             contratos.cargar();
             pagos.cargar();
         } catch (RuntimeException e) {
-            // Si un CSV esta danado se avisa y se sale: seguir y guardar al cerrar pisaria los datos
             JOptionPane.showMessageDialog(null,
                 "No se pudieron cargar los archivos de la carpeta data/:\n" + e,
                 "Error al cargar", JOptionPane.ERROR_MESSAGE);

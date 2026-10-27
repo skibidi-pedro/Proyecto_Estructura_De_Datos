@@ -6,12 +6,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
-/**
- * Lectura y escritura de archivos CSV de todos los modulos (2.8).
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
-
 
 public class GestorCSV {
     private static final String RUTA_DIRECTORIO = "data/";

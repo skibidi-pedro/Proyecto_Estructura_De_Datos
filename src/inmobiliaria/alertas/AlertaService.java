@@ -10,17 +10,9 @@ import inmobiliaria.nucleo.estructuras.ColaPrioridad;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 import inmobiliaria.nucleo.util.Fechas;
 
-/**
- * Alertas de contratos por vencer (30 dias) y de pagos pendientes.
- *
- * Cada alerta es una linea de texto lista para mostrar en el menu.
- *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
- * Reglas: RN-12
- */
 public class AlertaService {
     public static final int DIAS_VENCIMIENTO_CONTRATO = 30;
-    public static final int DIAS_AVISO_PAGO = 3;      // avisa cuotas que vencen en los proximos 3 dias
+    public static final int DIAS_AVISO_PAGO = 3;
 
     private ContratoService contratos;
     private PagoService pagos;
@@ -32,7 +24,6 @@ public class AlertaService {
         this.mora = mora;
     }
 
-    // Contratos vigentes que vencen dentro de 30 dias
     public ListaSimple<String> contratosPorVencer(LocalDate hoy) {
         ListaSimple<String> alertas = new ListaSimple<>();
         ListaSimple<Contrato> lista = contratos.porVencer(hoy, DIAS_VENCIMIENTO_CONTRATO);
@@ -49,7 +40,6 @@ public class AlertaService {
         return alertas;
     }
 
-    // Cuotas vencidas sin pagar (la mas atrasada primero) y cuotas por vencer en pocos dias
     public ListaSimple<String> pagosPendientes(LocalDate hoy) {
         ListaSimple<String> alertas = new ListaSimple<>();
 
@@ -77,7 +67,6 @@ public class AlertaService {
         return alertas;
     }
 
-    // Todas las alertas juntas
     public ListaSimple<String> todas(LocalDate hoy) {
         ListaSimple<String> resultado = contratosPorVencer(hoy);
         ListaSimple<String> pendientes = pagosPendientes(hoy);

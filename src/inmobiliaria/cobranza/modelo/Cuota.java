@@ -4,20 +4,13 @@ import java.time.LocalDate;
 import inmobiliaria.nucleo.persistencia.Persistible;
 import inmobiliaria.nucleo.util.Fechas;
 
-/**
- * Cuota mensual de un contrato (vencimiento, monto, saldo).
- *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
- * Reglas: RN-07, RN-09
- */
 public class Cuota implements Persistible {
     private String numeroContrato;
-    private int numero;              // 1, 2, 3... dentro del contrato
+    private int numero;
     private LocalDate vencimiento;
     private double monto;
-    private double saldo;            // lo que falta pagar (RN-09: puede haber pagos parciales)
+    private double saldo;
 
-    // Vacio, para poder usar desdeLineaCSV al cargar
     public Cuota() {
     }
 
@@ -39,7 +32,6 @@ public class Cuota implements Persistible {
         return saldo <= 0;
     }
 
-    // La validacion (monto > 0 y no mayor al saldo) la hace PagoService
     public void aplicarPago(double importe) {
         saldo = Math.round((saldo - importe) * 100.0) / 100.0;
         if (saldo < 0.005) saldo = 0;

@@ -10,17 +10,6 @@ import inmobiliaria.nucleo.persistencia.Persistible;
 import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.nucleo.util.Validador;
 
-/**
- * Alta, renovacion, ajuste de renta y finalizacion (2.3).
- *
- * Los datos de otros modulos (unidad disponible, moroso, expediente completo)
- * se reciben como parametros, asi este servicio no depende de las clases de
- * los demas. Quien llame (menu o servicio de integracion) tambien se encarga
- * de cambiar el estado de la unidad (ALQUILADA al activar, DISPONIBLE al finalizar).
- *
- * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
- * Reglas: RN-02, RN-03, RN-04, RN-05, RN-12, RN-13
- */
 public class ContratoService {
     private static final String ARCHIVO = "contratos.csv";
 
@@ -31,7 +20,6 @@ public class ContratoService {
         this.historial = historial;
     }
 
-    // ---------- Crear (RN-01, 02, 03, 04, 05, 11) ----------
     public Contrato crear(String numero, String documento, String codigoUnidad,
                           LocalDate inicio, LocalDate fin, double renta,
                           int diaPago, double garantia, String clausulas,
@@ -40,16 +28,16 @@ public class ContratoService {
         if (!Validador.esTextoValido(numero) || !Validador.esTextoValido(documento)
                 || !Validador.esTextoValido(codigoUnidad))
             throw new IllegalArgumentException("Numero, arrendatario y unidad son obligatorios");
-        if (buscar(numero) != null)                                    // RN-01
+        if (buscar(numero) != null)
             throw new IllegalArgumentException("Ya existe el contrato " + numero);
-        if (arrendatarioMoroso)                                        // RN-11
+        if (arrendatarioMoroso)
             throw new IllegalArgumentException("El arrendatario es moroso, no puede firmar");
-        if (!unidadDisponible)                                         // RN-02
+        if (!unidadDisponible)
             throw new IllegalArgumentException("La unidad no esta disponible");
-        if (contratoVigenteDeUnidad(codigoUnidad) != null)             // RN-03
+        if (contratoVigenteDeUnidad(codigoUnidad) != null)
             throw new IllegalArgumentException("La unidad ya tiene un contrato vigente");
 
-        if (inicio == null || fin == null)                             // RN-04
+        if (inicio == null || fin == null)
             throw new IllegalArgumentException("Faltan las fechas del contrato");
         if (!Validador.esMontoValido(renta))
             throw new IllegalArgumentException("La renta debe ser mayor a cero");
@@ -57,7 +45,7 @@ public class ContratoService {
             throw new IllegalArgumentException("El dia de pago debe estar entre 1 y 28");
         if (garantia < 0)
             throw new IllegalArgumentException("La garantia no puede ser negativa");
-        if (!Fechas.esPosterior(inicio, fin))                          // RN-05
+        if (!Fechas.esPosterior(inicio, fin))
             throw new IllegalArgumentException("La fecha de fin debe ser posterior a la de inicio");
 
         Contrato c = new Contrato(numero, documento, codigoUnidad, inicio, fin,
@@ -67,14 +55,13 @@ public class ContratoService {
         return c;
     }
 
-    // ---------- Activar (RN-06). Despues hay que generar las cuotas (RN-07) ----------
     public Contrato activar(String numero, boolean expedienteCompleto) {
         Contrato c = buscarObligatorio(numero);
         if (c.getEstado() != EstadoContrato.PENDIENTE)
             throw new IllegalArgumentException("Solo se puede activar un contrato pendiente");
-        if (!expedienteCompleto)                                       // RN-06
+        if (!expedienteCompleto)
             throw new IllegalArgumentException("El expediente esta incompleto (identidad y contrato firmado)");
-        if (contratoVigenteDeUnidad(c.getCodigoUnidad()) != null)      // RN-03
+        if (contratoVigenteDeUnidad(c.getCodigoUnidad()) != null)
             throw new IllegalArgumentException("La unidad ya tiene un contrato vigente");
 
         c.setEstado(EstadoContrato.VIGENTE);
@@ -82,8 +69,6 @@ public class ContratoService {
         return c;
     }
 
-    // ---------- Renovar (RN-12) ----------
-    // porcentaje: 5 = sube 5%, 0 = misma renta
     public Contrato renovar(String numero, LocalDate nuevaFechaFin, double porcentaje,
                             boolean arrendatarioMoroso) {
         Contrato c = buscarObligatorio(numero);
@@ -97,10 +82,9 @@ public class ContratoService {
         aplicarAjuste(c, porcentaje);
         c.setFechaFin(nuevaFechaFin);
         historial.registrarOperacion("Contrato renovado: " + numero);
-        return c;   // cobranza debe generar las cuotas del periodo nuevo
+        return c;
     }
 
-    // ---------- Ajustar renta ----------
     public void ajustarRenta(String numero, double porcentaje) {
         Contrato c = buscarObligatorio(numero);
         aplicarAjuste(c, porcentaje);
@@ -114,8 +98,6 @@ public class ContratoService {
         c.setRentaMensual(nueva);
     }
 
-    // ---------- Finalizar + liquidar garantia (RN-03, RN-13) ----------
-    // deudaRenta y mora vienen de cobranza, los danos los registra el usuario
     public LiquidacionGarantia finalizar(String numero, double deudaRenta, double mora, double danos) {
         Contrato c = buscarObligatorio(numero);
         if (c.getEstado() != EstadoContrato.VIGENTE)
@@ -126,7 +108,6 @@ public class ContratoService {
         return new LiquidacionGarantia(c.getGarantia(), deudaRenta, mora, danos);
     }
 
-    // ---------- Consultas ----------
     public Contrato buscar(String numero) {
         for (int i = 0; i < contratos.getTamano(); i++) {
             Contrato c = contratos.obtener(i);
@@ -148,7 +129,6 @@ public class ContratoService {
         return contratos;
     }
 
-    // Vigentes que vencen dentro de 'dias' dias (alerta de 30 dias, RN-12)
     public ListaSimple<Contrato> porVencer(LocalDate hoy, int dias) {
         ListaSimple<Contrato> resultado = new ListaSimple<>();
         LocalDate limite = hoy.plusDays(dias);
@@ -160,7 +140,6 @@ public class ContratoService {
         return resultado;
     }
 
-    // ---------- Persistencia (data/contratos.csv) ----------
     public void cargar() {
         ListaSimple<String> lineas = new ListaSimple<>();
         GestorCSV.cargar(ARCHIVO, lineas);

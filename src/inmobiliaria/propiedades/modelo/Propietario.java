@@ -2,17 +2,10 @@ package inmobiliaria.propiedades.modelo;
 
 import inmobiliaria.nucleo.persistencia.Persistible;
 
-/**
- * Entidad propietario.
- *
- * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
- * Reglas: RN-01
- */
 public class Propietario implements Persistible {
     private String codigo;
     private String nombre;
 
-    // Vacio, para usar desdeLineaCSV al cargar
     public Propietario() {
     }
 
@@ -25,7 +18,6 @@ public class Propietario implements Persistible {
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = limpiar(nombre); }
 
-    // El separador del CSV es ';'
     private String limpiar(String texto) {
         return texto == null ? "" : texto.trim().replace(";", ",");
     }

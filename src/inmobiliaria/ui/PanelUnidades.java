@@ -23,13 +23,6 @@ import inmobiliaria.propiedades.modelo.TipoUnidad;
 import inmobiliaria.propiedades.modelo.Unidad;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 
-/**
- * Unidades (departamentos, casas, locales, cuartos) de la propiedad seleccionada.
- * Usa PropiedadService (Integrante 2). Las unidades nacen DISPONIBLE o EN_MANTENIMIENTO;
- * ALQUILADA solo la pone el modulo de contratos al activar uno.
- * El codigo se asigna solo (UNI-001, ...) y no se muestra: la columna esta oculta pero sigue en el modelo.
- * La ventana no es modal (se pueden abrir varias) y se refresca sola cada segundo.
- */
 public class PanelUnidades extends JDialog {
     private final PropiedadService propiedades;
     private final Edificio edificio;

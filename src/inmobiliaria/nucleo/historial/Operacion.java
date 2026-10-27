@@ -1,10 +1,5 @@
 package inmobiliaria.nucleo.historial;
 import java.time.LocalDateTime;
-/**
- * Operacion registrada y reversible (pago, alta, cambio de estado).
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
 public class Operacion {
     private String descripcion;
     private LocalDateTime fechaHora;

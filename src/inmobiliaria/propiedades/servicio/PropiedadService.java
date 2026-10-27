@@ -13,16 +13,6 @@ import inmobiliaria.propiedades.modelo.Propietario;
 import inmobiliaria.propiedades.modelo.TipoUnidad;
 import inmobiliaria.propiedades.modelo.Unidad;
 
-/**
- * CRUD de propietarios, edificios y unidades; busqueda por codigo, direccion, tipo, precio o estado (2.1).
- *
- * Se usan dos estructuras a la vez:
- *  - un AVL por cada entidad, para buscar por codigo en O(log n) y listar ordenado;
- *  - un arbol general (Propietario > Edificio > Unidad) para saber que cuelga de que.
- *
- * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
- * Reglas: RN-01, RN-02
- */
 public class PropiedadService {
     private ArbolAVL<String, Propietario> propietarios = new ArbolAVL<>();
     private ArbolAVL<String, Edificio> edificios = new ArbolAVL<>();
@@ -34,14 +24,11 @@ public class PropiedadService {
         this.historial = historial;
     }
 
-    // =====================================================
-    //  PROPIETARIOS
-    // =====================================================
     public Propietario registrarPropietario(String codigo, String nombre) {
         if (!Validador.esTextoValido(codigo) || !Validador.esTextoValido(nombre))
             throw new IllegalArgumentException("Codigo y nombre del propietario son obligatorios");
         codigo = codigo.trim();
-        if (propietarios.buscar(codigo) != null)                       // RN-01
+        if (propietarios.buscar(codigo) != null)
             throw new IllegalArgumentException("Ya existe el propietario " + codigo);
 
         Propietario p = new Propietario(codigo, nombre);
@@ -75,9 +62,6 @@ public class PropiedadService {
         return propietarios.enOrden();
     }
 
-    // =====================================================
-    //  EDIFICIOS
-    // =====================================================
     public Edificio registrarEdificio(String codigoPropietario, String codigo,
                                       String nombre, String direccion) {
         Propietario p = buscarPropietarioObligatorio(codigoPropietario);
@@ -131,9 +115,6 @@ public class PropiedadService {
         return resultado;
     }
 
-    // =====================================================
-    //  UNIDADES
-    // =====================================================
     public Unidad registrarUnidad(String codigoEdificio, String codigo, String direccion,
                                   TipoUnidad tipo, double precio, EstadoUnidad estadoInicial) {
         Edificio e = buscarEdificioObligatorio(codigoEdificio);
@@ -144,7 +125,7 @@ public class PropiedadService {
         if (!Validador.esMontoValido(precio))
             throw new IllegalArgumentException("El precio debe ser mayor a cero");
         codigo = codigo.trim();
-        if (unidades.buscar(codigo) != null)                           // RN-01
+        if (unidades.buscar(codigo) != null)
             throw new IllegalArgumentException("Ya existe la unidad " + codigo);
 
         Unidad u = new Unidad(codigo, e.getCodigo(), direccion, tipo, precio, estadoInicial);
@@ -166,7 +147,6 @@ public class PropiedadService {
         historial.registrarOperacion("Unidad modificada: " + codigo);
     }
 
-    // Lo usa el modulo de contratos: ALQUILADA al activar, DISPONIBLE al finalizar
     public void cambiarEstadoUnidad(String codigo, EstadoUnidad nuevoEstado) {
         if (nuevoEstado == null)
             throw new IllegalArgumentException("Falta el estado");
@@ -187,7 +167,6 @@ public class PropiedadService {
         return unidades.buscar(codigo);
     }
 
-    // RN-02: solo las disponibles pueden recibir un contrato nuevo
     public boolean unidadDisponible(String codigo) {
         Unidad u = unidades.buscar(codigo);
         return u != null && u.getEstado() == EstadoUnidad.DISPONIBLE;
@@ -219,9 +198,6 @@ public class PropiedadService {
         return resultado;
     }
 
-    // =====================================================
-    //  BUSQUEDAS DE UNIDADES (direccion, tipo, precio, estado)
-    // =====================================================
     public ListaSimple<Unidad> buscarPorDireccion(String texto) {
         ListaSimple<Unidad> resultado = new ListaSimple<>();
         ListaSimple<Unidad> todas = unidades.enOrden();
@@ -251,7 +227,6 @@ public class PropiedadService {
         return resultado;
     }
 
-    // Unidades con precio entre min y max (inclusive)
     public ListaSimple<Unidad> buscarPorPrecio(double min, double max) {
         ListaSimple<Unidad> resultado = new ListaSimple<>();
         ListaSimple<Unidad> todas = unidades.enOrden();
@@ -262,9 +237,6 @@ public class PropiedadService {
         return resultado;
     }
 
-    // =====================================================
-    //  PERSISTENCIA (propietarios.csv, edificios.csv, unidades.csv)
-    // =====================================================
     public void cargar() {
         ListaSimple<String> lineas = new ListaSimple<>();
         GestorCSV.cargar("propietarios.csv", lineas);
@@ -281,7 +253,7 @@ public class PropiedadService {
             Edificio e = new Edificio();
             e.desdeLineaCSV(lineas.obtener(i));
             Propietario p = propietarios.buscar(e.getCodigoPropietario());
-            if (p == null) continue;               // linea huerfana, la ignoro
+            if (p == null) continue;
             edificios.insertar(e.getCodigo(), e);
             jerarquia.agregar(p, e);
         }
@@ -304,7 +276,6 @@ public class PropiedadService {
         guardarLista("unidades.csv", unidades.enOrden());
     }
 
-    // GestorCSV pide ListaSimple<Persistible>, asi que copio
     private <T extends Persistible> void guardarLista(String archivo, ListaSimple<T> origen) {
         ListaSimple<Persistible> lista = new ListaSimple<>();
         for (int i = 0; i < origen.getTamano(); i++) {
@@ -313,7 +284,6 @@ public class PropiedadService {
         GestorCSV.guardar(archivo, lista);
     }
 
-    // =====================================================
     private Propietario buscarPropietarioObligatorio(String codigo) {
         Propietario p = (codigo == null) ? null : propietarios.buscar(codigo.trim());
         if (p == null) throw new IllegalArgumentException("No existe el propietario " + codigo);

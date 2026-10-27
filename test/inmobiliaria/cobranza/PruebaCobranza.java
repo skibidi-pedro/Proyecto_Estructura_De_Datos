@@ -16,14 +16,6 @@ import inmobiliaria.propiedades.modelo.TipoUnidad;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 import inmobiliaria.reportes.ReporteService;
 
-/**
- * Pruebas del integrante 4 (cobranza, alertas, reportes) sin JUnit.
- *
- * Ejecutar desde una carpeta vacia, porque la prueba de persistencia
- * escribe en ./data/ :
- *   javac -d out $(find src test -name '*.java')
- *   java -cp out inmobiliaria.cobranza.PruebaCobranza
- */
 public class PruebaCobranza {
     private static int fallos = 0;
 
@@ -53,7 +45,6 @@ public class PruebaCobranza {
         Contrato c = contratos.crear("C1", "DNI1", "U1", LocalDate.of(2026, 1, 10),
                 LocalDate.of(2026, 6, 30), 1000, 10, 1000, "sin clausulas", true, false);
 
-        // ---- RN-07: cuotas ----
         verificar("No genera cuotas de un contrato pendiente", lanza(() -> pagos.generarCuotas(c)));
         contratos.activar("C1", true);
         ListaSimple<Cuota> generadas = pagos.generarCuotas(c);
@@ -62,7 +53,6 @@ public class PruebaCobranza {
         verificar("Ultimo vencimiento 2026-06-10", generadas.obtener(5).getVencimiento().equals(LocalDate.of(2026, 6, 10)));
         verificar("No genera cuotas dos veces", lanza(() -> pagos.generarCuotas(c)));
 
-        // ---- RN-09 / RN-10: pagos y recibos ----
         Recibo r1 = pagos.registrarPago("C1", 1, 1000, LocalDate.of(2026, 1, 10));
         verificar("Pago total deja la cuota pagada", pagos.buscarCuota("C1", 1).estaPagada());
         verificar("Primer recibo es el 1", r1.getNumero() == 1 && r1.getCodigo().equals("REC-000001"));
@@ -76,7 +66,6 @@ public class PruebaCobranza {
         verificar("Pagos rechazados no emiten recibo", pagos.listarRecibos().getTamano() == 2);
         verificar("Deuda pendiente = 600 + 4 cuotas de 1000", pagos.deudaPendiente("C1") == 4600);
 
-        // ---- RN-08 / RN-11: mora ----
         LocalDate hoy = LocalDate.of(2026, 3, 20);
         Cuota c2 = pagos.buscarCuota("C1", 2);
         Cuota c3 = pagos.buscarCuota("C1", 3);
@@ -96,7 +85,6 @@ public class PruebaCobranza {
         verificar("Cobros urgentes: 2 cuotas vencidas", urgentes.getTamano() == 2);
         verificar("Sale primero la mas atrasada (cuota 2)", urgentes.desencolar().getNumero() == 2);
 
-        // ---- Renovacion: cuotas del periodo nuevo ----
         LocalDate finAnterior = c.getFechaFin();
         contratos.renovar("C1", LocalDate.of(2026, 8, 31), 0, false);
         ListaSimple<Cuota> nuevas = pagos.generarCuotasRenovacion(c, finAnterior);
@@ -104,7 +92,6 @@ public class PruebaCobranza {
         verificar("La numeracion continua en 7", nuevas.obtener(0).getNumero() == 7);
         verificar("Total de cuotas = 8", pagos.cuotasDe("C1").getTamano() == 8);
 
-        // ---- RN-12: alertas ----
         LocalDate cerca = LocalDate.of(2026, 8, 10);
         verificar("Alerta de contrato por vencer (fin 31-ago)", alertas.contratosPorVencer(cerca).getTamano() == 1);
         verificar("Sin alerta de vencimiento lejos del fin", alertas.contratosPorVencer(hoy).getTamano() == 0);
@@ -115,7 +102,6 @@ public class PruebaCobranza {
                 alertas.pagosPendientes(LocalDate.of(2026, 4, 8)).obtener(
                         alertas.pagosPendientes(LocalDate.of(2026, 4, 8)).getTamano() - 1).contains("cuota 4"));
 
-        // ---- Reportes ----
         verificar("Ingresos de enero = 1000", reportes.totalIngresos(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) == 1000);
         verificar("Ingresos ene-mar = 1400", reportes.totalIngresos(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31)) == 1400);
         verificar("Reporte de ingresos incluye el total", reportes.reporteIngresos(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 3, 31)).contains("S/ 1400.00"));
@@ -123,7 +109,6 @@ public class PruebaCobranza {
         verificar("Morosidad sin mora lo indica", reportes.reporteMorosidad(LocalDate.of(2026, 1, 11)).contains("No hay contratos en mora"));
         verificar("Ocupacion 50%", reportes.reporteOcupacion().contains("OCUPACION: 50.0%"));
 
-        // ---- Persistencia (escribe en ./data/) ----
         pagos.guardar();
         PagoService recargado = new PagoService(new Historial());
         recargado.cargar();

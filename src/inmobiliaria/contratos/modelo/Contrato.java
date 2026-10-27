@@ -4,12 +4,6 @@ import java.time.LocalDate;
 import inmobiliaria.nucleo.persistencia.Persistible;
 import inmobiliaria.nucleo.util.Fechas;
 
-/**
- * Entidad contrato.
- *
- * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
- * Reglas: RN-01, RN-04, RN-05
- */
 public class Contrato implements Persistible {
     private String numero;
     private String documentoArrendatario;
@@ -22,7 +16,6 @@ public class Contrato implements Persistible {
     private String clausulas;
     private EstadoContrato estado;
 
-    // Vacio, para poder usar desdeLineaCSV al cargar
     public Contrato() {
     }
 
@@ -56,7 +49,6 @@ public class Contrato implements Persistible {
     public void setRentaMensual(double rentaMensual) { this.rentaMensual = rentaMensual; }
     public void setEstado(EstadoContrato estado) { this.estado = estado; }
 
-    // El separador del CSV es ';', asi que no puede aparecer en las clausulas
     private String limpiar(String texto) {
         return texto == null ? "" : texto.replace(";", ",");
     }

@@ -13,14 +13,6 @@ import inmobiliaria.propiedades.modelo.EstadoUnidad;
 import inmobiliaria.propiedades.modelo.Unidad;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 
-/**
- * Reportes de ingresos, morosidad y ocupacion.
- *
- * Cada reporte devuelve el texto listo para mostrar. Los totales numericos
- * tambien estan disponibles por separado.
- *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
- */
 public class ReporteService {
     private ContratoService contratos;
     private PagoService pagos;
@@ -35,7 +27,6 @@ public class ReporteService {
         this.propiedades = propiedades;
     }
 
-    // ---------- Ingresos: pagos cobrados entre dos fechas (inclusive) ----------
     public double totalIngresos(LocalDate desde, LocalDate hasta) {
         double total = 0;
         ListaSimple<Pago> lista = pagos.listarPagos();
@@ -74,7 +65,6 @@ public class ReporteService {
         return sb.toString();
     }
 
-    // ---------- Morosidad: contratos con cuotas en mora ----------
     public String reporteMorosidad(LocalDate hoy) {
         StringBuilder sb = new StringBuilder();
         sb.append("REPORTE DE MOROSIDAD al ").append(Fechas.convertirAString(hoy)).append("\n");
@@ -105,7 +95,6 @@ public class ReporteService {
         return sb.toString();
     }
 
-    // ---------- Ocupacion: unidades por estado ----------
     public String reporteOcupacion() {
         int disponibles = 0, alquiladas = 0, mantenimiento = 0;
         ListaSimple<Unidad> lista = propiedades.listarUnidades();

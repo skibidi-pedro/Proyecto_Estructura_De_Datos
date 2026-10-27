@@ -30,12 +30,6 @@ import inmobiliaria.propiedades.modelo.Edificio;
 import inmobiliaria.propiedades.modelo.Unidad;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 
-/**
- * Cobro de rentas y mora (2.5) de la propiedad seleccionada: cuotas de un contrato,
- * pagos totales o parciales, recibos, dias de atraso, recargo y si el arrendatario es moroso.
- * Usa PagoService y MoraService (Integrante 4).
- * Ventana no modal (se pueden abrir varias) con refresco automatico cada segundo; no se muestran codigos.
- */
 public class PanelCobranza extends JDialog {
     private final ContratoService contratos;
     private final PagoService pagos;
@@ -48,7 +42,7 @@ public class PanelCobranza extends JDialog {
             "Cuota", "Vencimiento", "Monto (S/)", "Saldo (S/)", "Atraso (dias)", "Estado", "Recargo (S/)");
     private final JTable tabla = Dialogos.tabla(modelo);
     private final JLabel resumen = new JLabel(" ");
-    private boolean ajustandoCombo = false;   // evita refrescar dos veces al reconstruir el combo
+    private boolean ajustandoCombo = false;
 
     public PanelCobranza(Frame dueno, ContratoService contratos, PagoService pagos, MoraService mora,
                          PropiedadService propiedades, Edificio edificio) {
@@ -89,7 +83,7 @@ public class PanelCobranza extends JDialog {
         sincronizarContratos();
         comboContratos.addActionListener(e -> {
             if (ajustandoCombo) return;
-            tabla.clearSelection();   // la fila elegida era de otro contrato
+            tabla.clearSelection();
             refrescar();
         });
         refrescar();
@@ -115,14 +109,11 @@ public class PanelCobranza extends JDialog {
         return u == null ? "(unidad dada de baja)" : u.getDireccion();
     }
 
-    // Boton y timer: primero la lista de contratos (puede haber activaciones nuevas) y luego la tabla
     private void actualizar() {
         sincronizarContratos();
         refrescar();
     }
 
-    // Solo contratos activados (con cuotas): los pendientes todavia no cobran.
-    // Si la lista no cambio no se toca el combo; si cambio, se conserva el contrato elegido.
     private void sincronizarContratos() {
         List<Contrato> nuevos = new ArrayList<>();
         ListaSimple<Contrato> lista = contratos.listar();
@@ -144,7 +135,6 @@ public class PanelCobranza extends JDialog {
         ajustandoCombo = false;
     }
 
-    // Recibo sin codigo: fecha, cuota, pagado y saldo
     private String textoRecibo(Recibo r) {
         return Fechas.convertirAString(r.getFecha()) + " | cuota " + r.getNumeroCuota()
                 + " | pagado S/ " + Dialogos.dinero(r.getMontoPagado())
@@ -182,7 +172,6 @@ public class PanelCobranza extends JDialog {
                 + "   |   Gracia: " + MoraService.DIAS_GRACIA + " dias, recargo " + MoraService.PORCENTAJE_RECARGO + "%");
     }
 
-    // ---------- Registrar pago total o parcial y emitir recibo (RN-09, RN-10) ----------
     private void registrarPago() {
         Contrato c = (Contrato) comboContratos.getSelectedItem();
         Object numero = Dialogos.seleccionado(tabla, 0);
