@@ -1,6 +1,18 @@
 package inmobiliaria.ui;
 
 import java.awt.Component;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
+import javax.swing.DefaultListCellRenderer;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JDialog;
+import javax.swing.JList;
+import javax.swing.Timer;
+import inmobiliaria.nucleo.estructuras.ListaSimple;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -101,9 +113,79 @@ public class Dialogos {
         return t;
     }
 
-    // Texto de la celda (fila seleccionada, columna) o null si no hay fila seleccionada
+    // Valor de la fila seleccionada en la columna del MODELO (sirve aunque la columna este oculta), o null
     public static Object seleccionado(JTable tabla, int columna) {
         int fila = tabla.getSelectedRow();
-        return fila < 0 ? null : tabla.getValueAt(fila, columna);
+        return fila < 0 ? null : tabla.getModel().getValueAt(tabla.convertRowIndexToModel(fila), columna);
+    }
+
+    // Oculta una columna de la vista pero sigue en el modelo (para codigos que el usuario no ve)
+    public static void ocultarColumna(JTable tabla, int columna) {
+        tabla.removeColumn(tabla.getColumnModel().getColumn(columna));
+    }
+
+    // Vuelca las filas al modelo SOLO si cambiaron, y vuelve a seleccionar la fila (por la columna 0)
+    public static void poblar(JTable tabla, DefaultTableModel modelo, List<Object[]> filas) {
+        if (modelo.getRowCount() == filas.size()) {
+            boolean igual = true;
+            for (int i = 0; i < filas.size() && igual; i++) {
+                for (int j = 0; j < modelo.getColumnCount(); j++) {
+                    if (!Objects.equals(modelo.getValueAt(i, j), filas.get(i)[j])) { igual = false; break; }
+                }
+            }
+            if (igual) return;
+        }
+        Object clave = seleccionado(tabla, 0);
+        modelo.setRowCount(0);
+        for (Object[] f : filas) modelo.addRow(f);
+        if (clave == null) return;
+        for (int i = 0; i < modelo.getRowCount(); i++) {
+            if (clave.equals(modelo.getValueAt(i, 0))) { tabla.setRowSelectionInterval(i, i); break; }
+        }
+    }
+
+    // ---------- Refresco ----------
+    public static JButton botonRefrescar(Runnable accion) {
+        JButton b = new JButton("Refrescar");
+        b.addActionListener(e -> accion.run());
+        return b;
+    }
+
+    // Llama a accion cada segundo mientras la ventana este visible; se detiene al cerrarla.
+    // Como poblar() no toca la tabla si nada cambio, el costo es leer los datos una vez por segundo.
+    public static void autoRefrescar(JDialog ventana, Runnable accion) {
+        Timer t = new Timer(1000, e -> {
+            if (!ventana.isShowing()) return;
+            try {
+                accion.run();
+            } catch (RuntimeException ex) {
+                // un dato pudo cambiar a medio refresco (p. ej. una baja en otra ventana): el siguiente tick reintenta
+            }
+        });
+        ventana.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        ventana.addWindowListener(new WindowAdapter() {
+            @Override public void windowClosed(WindowEvent e) { t.stop(); }
+        });
+        t.start();
+    }
+
+    // ---------- Textos sin codigos ----------
+    @SuppressWarnings("unchecked")
+    public static <T> void mostrarComo(JComboBox<T> combo, Function<T, String> texto) {
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> lista, Object valor, int indice,
+                                                          boolean seleccionado, boolean foco) {
+                super.getListCellRendererComponent(lista, valor, indice, seleccionado, foco);
+                if (valor != null) setText(texto.apply((T) valor));
+                return this;
+            }
+        });
+    }
+
+    public static <T> ListaSimple<String> codigos(ListaSimple<T> lista, Function<T, String> codigo) {
+        ListaSimple<String> r = new ListaSimple<>();
+        for (int i = 0; i < lista.getTamano(); i++) r.agregar(codigo.apply(lista.obtener(i)));
+        return r;
     }
 }

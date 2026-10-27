@@ -10,7 +10,7 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
 
 /**
  * Punto de entrada. Crea los servicios, carga los CSV (2.8) y arranca el menu Swing.
- * Todos los servicios comparten el mismo Historial.
+ * Los servicios siguen compartiendo el Historial (el menu ya no lo muestra: refinamiento posterior).
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
@@ -35,6 +35,6 @@ public class Main {
         }
 
         SwingUtilities.invokeLater(() ->
-            new MenuPrincipal(historial, propiedades, contratos, pagos, mora).setVisible(true));
+            new MenuPrincipal(propiedades, contratos, pagos, mora).setVisible(true));
     }
 }

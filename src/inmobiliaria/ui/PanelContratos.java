@@ -3,6 +3,8 @@ package inmobiliaria.ui;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDate;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -22,6 +24,7 @@ import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.contratos.servicio.LiquidacionGarantia;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 import inmobiliaria.nucleo.util.Fechas;
+import inmobiliaria.nucleo.util.GeneradorCodigo;
 import inmobiliaria.propiedades.modelo.Edificio;
 import inmobiliaria.propiedades.modelo.EstadoUnidad;
 import inmobiliaria.propiedades.modelo.Unidad;
@@ -37,6 +40,8 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  *  - cambiar estado unidad   -> PropiedadService (ALQUILADA al activar, DISPONIBLE al finalizar)
  *  - cuotas al activar/renovar -> PagoService (RN-07)
  *  - deuda y mora al finalizar -> PagoService y MoraService (RN-13)
+ *  - el numero de contrato se asigna solo (CON-001, ...) y no se muestra (columna oculta en la tabla)
+ *  - ventana no modal (se pueden abrir varias) con refresco automatico cada segundo
  *  - expediente completo (RN-06): el modulo Documentos esta en proceso, por ahora se confirma a mano.
  */
 public class PanelContratos extends JDialog {
@@ -51,7 +56,7 @@ public class PanelContratos extends JDialog {
 
     public PanelContratos(Frame dueno, ContratoService contratos, PropiedadService propiedades,
                           PagoService pagos, MoraService mora, Edificio edificio) {
-        super(dueno, "Contratos - " + edificio.getNombre(), true);
+        super(dueno, "Contratos - " + edificio.getNombre(), false);
         this.contratos = contratos;
         this.propiedades = propiedades;
         this.pagos = pagos;
@@ -60,6 +65,7 @@ public class PanelContratos extends JDialog {
 
         setLayout(new BorderLayout(8, 8));
         add(new JLabel("  Propiedad: " + edificio), BorderLayout.NORTH);
+        Dialogos.ocultarColumna(tabla, 0);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -67,10 +73,12 @@ public class PanelContratos extends JDialog {
         botones.add(boton("Activar", () -> activar()));
         botones.add(boton("Renovar", () -> renovar()));
         botones.add(boton("Finalizar", () -> finalizar()));
+        botones.add(Dialogos.botonRefrescar(this::refrescar));
         botones.add(boton("Cerrar", () -> dispose()));
         add(botones, BorderLayout.SOUTH);
 
         refrescar();
+        Dialogos.autoRefrescar(this, this::refrescar);
         setSize(760, 380);
         setLocationRelativeTo(dueno);
     }
@@ -99,16 +107,23 @@ public class PanelContratos extends JDialog {
         return false;
     }
 
+    // En la tabla se muestra la direccion de la unidad, no su codigo
+    private String direccionDe(String codigoUnidad) {
+        Unidad u = propiedades.buscarUnidad(codigoUnidad);
+        return u == null ? "(unidad dada de baja)" : u.getDireccion();
+    }
+
     private void refrescar() {
-        modelo.setRowCount(0);
+        List<Object[]> filas = new ArrayList<>();
         ListaSimple<Contrato> lista = contratos.listar();
         for (int i = 0; i < lista.getTamano(); i++) {
             Contrato c = lista.obtener(i);
             if (!esDeLaPropiedad(c.getCodigoUnidad())) continue;
-            modelo.addRow(new Object[] { c.getNumero(), c.getCodigoUnidad(), c.getDocumentoArrendatario(),
+            filas.add(new Object[] { c.getNumero(), direccionDe(c.getCodigoUnidad()), c.getDocumentoArrendatario(),
                     Fechas.convertirAString(c.getFechaInicio()), Fechas.convertirAString(c.getFechaFin()),
                     Dialogos.dinero(c.getRentaMensual()), c.getEstado() });
         }
+        Dialogos.poblar(tabla, modelo, filas);
     }
 
     private Contrato seleccionado() {
@@ -128,7 +143,7 @@ public class PanelContratos extends JDialog {
             throw new IllegalArgumentException(
                     "No hay unidades disponibles en esta propiedad. Registrelas en el modulo Unidades.");
 
-        JTextField numero = Dialogos.texto("");
+        Dialogos.mostrarComo(unidades, u -> u.getDireccion() + " | " + u.getTipo() + " | S/ " + Dialogos.dinero(u.getPrecio()));
         JTextField documento = Dialogos.texto("");
         JTextField inicio = Dialogos.texto(Fechas.convertirAString(hoy()));
         JTextField fin = Dialogos.texto(Fechas.convertirAString(hoy().plusYears(1)));
@@ -145,22 +160,25 @@ public class PanelContratos extends JDialog {
         });
 
         if (!Dialogos.formulario(this, "Nuevo contrato",
-                new String[] { "Numero de contrato", "Documento del arrendatario", "Unidad",
+                new String[] { "Documento del arrendatario", "Unidad",
                         "Inicio (AAAA-MM-DD)", "Fin (AAAA-MM-DD)", "Renta mensual (S/)",
                         "Dia de pago (1-28)", "Garantia (S/)", "Clausulas" },
-                new JComponent[] { numero, documento, unidades, inicio, fin, renta, diaPago, garantia, clausulas }))
+                new JComponent[] { documento, unidades, inicio, fin, renta, diaPago, garantia, clausulas }))
             return;
 
         String doc = documento.getText().trim();
         Unidad unidad = (Unidad) unidades.getSelectedItem();
-        Contrato c = contratos.crear(numero.getText().trim(), doc, unidad.getCodigo(),
+        String numero = GeneradorCodigo.siguiente("CON",
+                Dialogos.codigos(contratos.listar(), Contrato::getNumero));
+        Contrato c = contratos.crear(numero, doc, unidad.getCodigo(),
                 Dialogos.fecha(inicio, "Inicio"), Dialogos.fecha(fin, "Fin"),
                 Dialogos.numero(renta, "Renta"), Dialogos.entero(diaPago, "Dia de pago"),
                 Dialogos.numero(garantia, "Garantia"), clausulas.getText(),
                 propiedades.unidadDisponible(unidad.getCodigo()),
                 mora.esMoroso(doc, contratos.listar(), hoy()));
+        GeneradorCodigo.marcarUsado(numero);
         refrescar();
-        Dialogos.info(this, "Contrato", "Contrato " + c.getNumero() + " creado (pendiente de activar).");
+        Dialogos.info(this, "Contrato", "Contrato creado para " + doc + " (pendiente de activar).");
     }
 
     // ---------- Activar (RN-06) + estado de unidad + cuotas (RN-07) ----------
@@ -175,7 +193,7 @@ public class PanelContratos extends JDialog {
         propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.ALQUILADA);
         ListaSimple<Cuota> cuotas = pagos.generarCuotas(c);
         refrescar();
-        Dialogos.info(this, "Contrato", "Contrato " + c.getNumero() + " activado.\n"
+        Dialogos.info(this, "Contrato", "Contrato de " + c.getDocumentoArrendatario() + " activado.\n"
                 + "Se generaron " + cuotas.getTamano() + " cuotas mensuales.");
     }
 
@@ -184,7 +202,7 @@ public class PanelContratos extends JDialog {
         Contrato c = seleccionado();
         JTextField nuevaFin = Dialogos.texto(Fechas.convertirAString(c.getFechaFin().plusYears(1)));
         JTextField porcentaje = Dialogos.texto("0");
-        if (!Dialogos.formulario(this, "Renovar contrato " + c.getNumero(),
+        if (!Dialogos.formulario(this, "Renovar contrato de " + c.getDocumentoArrendatario(),
                 new String[] { "Nueva fecha de fin (AAAA-MM-DD)", "Ajuste de renta (%)" },
                 new JComponent[] { nuevaFin, porcentaje })) return;
 
@@ -194,7 +212,7 @@ public class PanelContratos extends JDialog {
                 mora.esMoroso(c.getDocumentoArrendatario(), contratos.listar(), hoy()));
         ListaSimple<Cuota> nuevas = pagos.generarCuotasRenovacion(c, finAnterior);
         refrescar();
-        Dialogos.info(this, "Contrato", "Contrato " + c.getNumero() + " renovado.\n"
+        Dialogos.info(this, "Contrato", "Contrato de " + c.getDocumentoArrendatario() + " renovado.\n"
                 + "Se generaron " + nuevas.getTamano() + " cuotas nuevas.");
     }
 
@@ -204,7 +222,7 @@ public class PanelContratos extends JDialog {
         JTextField danos = Dialogos.texto("0");
         double deuda = pagos.deudaPendiente(c.getNumero());
         double recargo = mora.totalMora(c.getNumero(), hoy());
-        if (!Dialogos.formulario(this, "Finalizar contrato " + c.getNumero(),
+        if (!Dialogos.formulario(this, "Finalizar contrato de " + c.getDocumentoArrendatario(),
                 new String[] { "Garantia (S/)", "Renta adeudada (S/)", "Recargo por mora (S/)", "Danos a descontar (S/)" },
                 new JComponent[] { solo(Dialogos.dinero(c.getGarantia())), solo(Dialogos.dinero(deuda)),
                         solo(Dialogos.dinero(recargo)), danos })) return;

@@ -8,7 +8,7 @@ import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
-import inmobiliaria.nucleo.historial.Historial;
+import inmobiliaria.nucleo.util.GeneradorCodigo;
 import inmobiliaria.propiedades.modelo.Edificio;
 import inmobiliaria.propiedades.modelo.Propietario;
 import inmobiliaria.propiedades.servicio.PropiedadService;
@@ -21,7 +21,9 @@ import inmobiliaria.ui.PanelUnidades;
  * Menu principal en Swing. Primero se selecciona un propietario; en la pantalla
  * siguiente se selecciona o registra una de sus propiedades (panel pequeno,
  * arriba a la izquierda). Los modulos y reportes se habilitan recien cuando hay
- * una propiedad seleccionada. El historial tiene su propio boton, siempre visible.
+ * una propiedad seleccionada. Los codigos (propietario, propiedad, unidad, contrato) se asignan
+ * solos y no se muestran. Cada modulo abre en su propia ventana, y se pueden abrir varias a la vez.
+ * "Historial y deshacer" se quito: queda como opcion de refinamiento posterior.
  *
  * Una "propiedad" es un edificio del propietario (Propietario > Edificio > Unidad).
  *
@@ -41,7 +43,6 @@ public class MenuPrincipal extends JFrame {
     private final JPanel contenedor = new JPanel(cartas);
 
     // Servicios compartidos (los crea Main y carga los CSV)
-    private final Historial historial;
     private final PropiedadService propiedades;
     private final ContratoService contratos;
     private final PagoService pagos;
@@ -77,10 +78,9 @@ public class MenuPrincipal extends JFrame {
         "Ingresos", "Morosidad", "Ocupación", "Alertas",
     };
 
-    public MenuPrincipal(Historial historial, PropiedadService propiedades, ContratoService contratos,
+    public MenuPrincipal(PropiedadService propiedades, ContratoService contratos,
                          PagoService pagos, MoraService mora) {
         super("Gestión Inmobiliaria - Grupo 6");
-        this.historial = historial;
         this.propiedades = propiedades;
         this.contratos = contratos;
         this.pagos = pagos;
@@ -96,7 +96,6 @@ public class MenuPrincipal extends JFrame {
         contenedor.add(crearPanelSeleccion(), CARD_SELECCION);
         contenedor.add(crearPanelModulos(), CARD_MODULOS);
         add(contenedor, BorderLayout.CENTER);
-        add(crearPanelHistorial(), BorderLayout.SOUTH);
 
         recargarPropietarios();
         mostrarSeleccion();
@@ -115,6 +114,7 @@ public class MenuPrincipal extends JFrame {
         p.add(l, c);
 
         c.gridy = 1; c.fill = GridBagConstraints.HORIZONTAL;
+        Dialogos.mostrarComo(comboPropietarios, Propietario::getNombre);
         comboPropietarios.setPreferredSize(new Dimension(320, 30));
         p.add(comboPropietarios, c);
 
@@ -139,13 +139,15 @@ public class MenuPrincipal extends JFrame {
     }
 
     private void nuevoPropietario() {
-        JTextField codigo = Dialogos.texto("");
         JTextField nombre = Dialogos.texto("");
         if (!Dialogos.formulario(this, "Nuevo propietario",
-                new String[] { "Código", "Nombre" }, new JComponent[] { codigo, nombre })) return;
+                new String[] { "Nombre" }, new JComponent[] { nombre })) return;
         try {
-            // RN-01 (código único) y el registro en el historial los hace PropiedadService
-            Propietario p = propiedades.registrarPropietario(codigo.getText(), nombre.getText());
+            // El código se asigna solo y queda en memoria; RN-01 (código único) la valida PropiedadService
+            String codigo = GeneradorCodigo.siguiente("PRO",
+                    Dialogos.codigos(propiedades.listarPropietarios(), Propietario::getCodigo));
+            Propietario p = propiedades.registrarPropietario(codigo, nombre.getText());
+            GeneradorCodigo.marcarUsado(codigo);
             recargarPropietarios();
             modeloPropietarios.setSelectedItem(propiedades.buscarPropietario(p.getCodigo()));
         } catch (IllegalArgumentException ex) {
@@ -166,7 +168,7 @@ public class MenuPrincipal extends JFrame {
             ponerPropiedadElegida(null);
         }
         recargarPropiedades();
-        lblPropietario.setText("Propietario: " + sel);
+        lblPropietario.setText("Propietario: " + sel.getNombre());
         itemCambiar.setEnabled(true);
         cartas.show(contenedor, CARD_MODULOS);
     }
@@ -220,6 +222,7 @@ public class MenuPrincipal extends JFrame {
         c.anchor = GridBagConstraints.WEST;
 
         c.gridx = 0; c.gridy = 0; c.gridwidth = 3;
+        Dialogos.mostrarComo(comboPropiedades, e -> e.getNombre() + " (" + e.getDireccion() + ")");
         comboPropiedades.setPreferredSize(new Dimension(260, 24));
         p.add(comboPropiedades, c);
 
@@ -255,15 +258,17 @@ public class MenuPrincipal extends JFrame {
     }
 
     private void nuevaPropiedad() {
-        JTextField codigo = Dialogos.texto("");
         JTextField nombre = Dialogos.texto("");
         JTextField direccion = Dialogos.texto("");
         if (!Dialogos.formulario(this, "Nueva propiedad",
-                new String[] { "Código", "Nombre", "Dirección" },
-                new JComponent[] { codigo, nombre, direccion })) return;
+                new String[] { "Nombre", "Dirección" },
+                new JComponent[] { nombre, direccion })) return;
         try {
+            String codigo = GeneradorCodigo.siguiente("EDI",
+                    Dialogos.codigos(propiedades.listarEdificios(), Edificio::getCodigo));
             Edificio e = propiedades.registrarEdificio(propietarioActual.getCodigo(),
-                    codigo.getText(), nombre.getText(), direccion.getText());
+                    codigo, nombre.getText(), direccion.getText());
+            GeneradorCodigo.marcarUsado(codigo);
             recargarPropiedades();
             comboPropiedades.setSelectedItem(propiedades.buscarEdificio(e.getCodigo()));
             ponerPropiedadElegida(propiedades.buscarEdificio(e.getCodigo()));
@@ -294,16 +299,6 @@ public class MenuPrincipal extends JFrame {
         menuReportes.setEnabled(elegida != null);
     }
 
-    // ---------- Boton de historial, aparte de los modulos ----------
-    private JPanel crearPanelHistorial() {
-        JPanel p = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        p.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
-        JButton b = new JButton("Historial y deshacer");
-        b.addActionListener(e -> ejecutarDeshacer());
-        p.add(b);
-        return p;
-    }
-
     private JMenuBar crearBarra() {
         JMenuBar barra = new JMenuBar();
 
@@ -316,13 +311,8 @@ public class MenuPrincipal extends JFrame {
                 "Persistencia", JOptionPane.INFORMATION_MESSAGE);
         });
 
-        //Opcion de deshacer en la barra de menu
-        JMenuItem itemDeshacer = new JMenuItem("Deshacer ultima operacion");
-        itemDeshacer.addActionListener(e -> ejecutarDeshacer());
-
         archivo.add(itemCambiar);
         archivo.add(guardar);
-        archivo.add(itemDeshacer);
         barra.add(archivo);
 
         for (Opcion o : opciones) {
@@ -340,20 +330,6 @@ public class MenuPrincipal extends JFrame {
         }
         barra.add(menuReportes);
         return barra;
-    }
-
-    // OJO: Historial solo guarda descripciones; sacar la ultima NO revierte los datos.
-    // TODO (Integrante 1): que Operacion sepa como revertirse.
-    private void ejecutarDeshacer() {
-        Object ultimaOp = historial.deshacer();
-        if (ultimaOp != null) {
-            JOptionPane.showMessageDialog(this, "Se quitó del historial la última operación:\n"
-                + ultimaOp + "\n\nAviso: los datos no se revierten todavía.",
-            "Historial", JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            JOptionPane.showMessageDialog(this, "No hay operaciones registradas en el historial.",
-                "Historial", JOptionPane.WARNING_MESSAGE);
-        }
     }
 
     private void guardarTodo() {
