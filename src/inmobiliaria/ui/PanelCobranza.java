@@ -2,14 +2,12 @@ package inmobiliaria.ui;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.awt.Frame;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -34,9 +32,10 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  * Cobro de rentas y mora (2.5) de la propiedad seleccionada: cuotas de un contrato,
  * pagos totales o parciales, recibos, dias de atraso, recargo y si el arrendatario es moroso.
  * Usa PagoService y MoraService (Integrante 4).
- * Ventana no modal (se pueden abrir varias) con refresco automatico cada segundo; no se muestran codigos.
+ * Es un panel que MenuPrincipal muestra a la derecha de la ventana, con refresco automatico cada segundo;
+ * no se muestran codigos.
  */
-public class PanelCobranza extends JDialog {
+public class PanelCobranza extends JPanel {
     private final ContratoService contratos;
     private final PagoService pagos;
     private final MoraService mora;
@@ -50,9 +49,8 @@ public class PanelCobranza extends JDialog {
     private final JLabel resumen = new JLabel(" ");
     private boolean ajustandoCombo = false;   // evita refrescar dos veces al reconstruir el combo
 
-    public PanelCobranza(Frame dueno, ContratoService contratos, PagoService pagos, MoraService mora,
+    public PanelCobranza(ContratoService contratos, PagoService pagos, MoraService mora,
                          PropiedadService propiedades, Edificio edificio) {
-        super(dueno, "Cobro de rentas y mora - " + edificio.getNombre(), false);
         this.contratos = contratos;
         this.pagos = pagos;
         this.mora = mora;
@@ -78,12 +76,9 @@ public class PanelCobranza extends JDialog {
         pagar.addActionListener(e -> registrarPago());
         JButton verRecibos = new JButton("Ver recibos");
         verRecibos.addActionListener(e -> verRecibos());
-        JButton cerrar = new JButton("Cerrar");
-        cerrar.addActionListener(e -> dispose());
         botones.add(pagar);
         botones.add(verRecibos);
         botones.add(Dialogos.botonRefrescar(this::actualizar));
-        botones.add(cerrar);
         add(botones, BorderLayout.SOUTH);
 
         sincronizarContratos();
@@ -94,8 +89,6 @@ public class PanelCobranza extends JDialog {
         });
         refrescar();
         Dialogos.autoRefrescar(this, this::actualizar);
-        setSize(780, 400);
-        setLocationRelativeTo(dueno);
     }
 
     private LocalDate hoy() {

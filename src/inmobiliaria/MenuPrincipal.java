@@ -22,7 +22,8 @@ import inmobiliaria.ui.PanelUnidades;
  * siguiente se selecciona o registra una de sus propiedades (panel pequeno,
  * arriba a la izquierda). Los modulos y reportes se habilitan recien cuando hay
  * una propiedad seleccionada. Los codigos (propietario, propiedad, unidad, contrato) se asignan
- * solos y no se muestran. Cada modulo abre en su propia ventana, y se pueden abrir varias a la vez.
+ * solos y no se muestran. Los modulos son botones toggle: al activar uno, la ventana se expande hacia la
+ * derecha y lo muestra ahi (solo uno a la vez); al volver a pulsarlo, se cierra y la ventana se contrae.
  * "Historial y deshacer" se quito: queda como opcion de refinamiento posterior.
  *
  * Una "propiedad" es un edificio del propietario (Propietario > Edificio > Unidad).
@@ -36,11 +37,17 @@ public class MenuPrincipal extends JFrame {
 
     private static final String CARD_SELECCION = "seleccion";
     private static final String CARD_MODULOS = "modulos";
+    private static final int ANCHO_MODULO = 760;   // ancho que gana la ventana al abrir un modulo
 
     private record Opcion(String titulo) {}
 
     private final CardLayout cartas = new CardLayout();
     private final JPanel contenedor = new JPanel(cartas);
+
+    // Zona a la derecha donde se muestra el modulo activo (solo esta en la ventana mientras hay uno abierto)
+    private final JPanel vistaModulo = new JPanel(new BorderLayout());
+    private boolean expandida = false;
+    private int anchoVentanaMenu = 0;   // ancho de la ventana antes de expandirse, para volver a el
 
     // Servicios compartidos (los crea Main y carga los CSV)
     private final PropiedadService propiedades;
@@ -58,7 +65,7 @@ public class MenuPrincipal extends JFrame {
     private Propietario propietarioActual = null;
     private Edificio propiedadActual = null;
 
-    private final JButton[] botonesModulos;
+    private final JToggleButton[] botonesModulos;
     private final JMenu menuModulos = new JMenu("Módulos");
     private final JMenu menuReportes = new JMenu("Reportes");
     private final JMenuItem itemCambiar = new JMenuItem("Cambiar propietario");
@@ -91,7 +98,8 @@ public class MenuPrincipal extends JFrame {
             @Override public void windowClosing(WindowEvent e) { salir(); }
         });
 
-        botonesModulos = new JButton[opciones.length];
+        vistaModulo.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.GRAY));
+        botonesModulos = new JToggleButton[opciones.length];
         setJMenuBar(crearBarra());
         contenedor.add(crearPanelSeleccion(), CARD_SELECCION);
         contenedor.add(crearPanelModulos(), CARD_MODULOS);
@@ -174,6 +182,7 @@ public class MenuPrincipal extends JFrame {
     }
 
     private void mostrarSeleccion() {
+        cerrarModulo();
         itemCambiar.setEnabled(false);
         menuModulos.setEnabled(false);
         menuReportes.setEnabled(false);
@@ -202,9 +211,9 @@ public class MenuPrincipal extends JFrame {
         JPanel rejilla = new JPanel(new GridLayout(0, 1, 0, 10));
         rejilla.setBorder(BorderFactory.createEmptyBorder(10, 30, 20, 30));
         for (int i = 0; i < opciones.length; i++) {
-            Opcion o = opciones[i];
-            JButton b = new JButton("<html><center><b>" + o.titulo() + "</b></center></html>");
-            b.addActionListener(e -> abrir(o.titulo()));
+            final int indice = i;
+            JToggleButton b = new JToggleButton("<html><center><b>" + opciones[i].titulo() + "</b></center></html>");
+            b.addActionListener(e -> alternarModulo(indice));
             b.setEnabled(false);
             botonesModulos[i] = b;
             rejilla.add(b);
@@ -289,10 +298,11 @@ public class MenuPrincipal extends JFrame {
 
     // Habilita o deshabilita modulos y reportes segun haya propiedad elegida (null = ninguna)
     private void ponerPropiedadElegida(Edificio elegida) {
+        if (elegida != propiedadActual) cerrarModulo();   // el modulo abierto era de la otra propiedad
         propiedadActual = elegida;
         lblPropiedad.setText(elegida != null ? "Elegida: " + elegida.getNombre()
                                              : "Ninguna propiedad seleccionada");
-        for (JButton b : botonesModulos) {
+        for (JToggleButton b : botonesModulos) {
             b.setEnabled(elegida != null);
         }
         menuModulos.setEnabled(elegida != null);
@@ -315,9 +325,10 @@ public class MenuPrincipal extends JFrame {
         archivo.add(guardar);
         barra.add(archivo);
 
-        for (Opcion o : opciones) {
-            JMenuItem item = new JMenuItem(o.titulo());
-            item.addActionListener(e -> abrir(o.titulo()));
+        for (int i = 0; i < opciones.length; i++) {
+            final int indice = i;
+            JMenuItem item = new JMenuItem(opciones[i].titulo());
+            item.addActionListener(e -> abrirModulo(indice));
             menuModulos.add(item);
         }
         barra.add(menuModulos);
@@ -338,18 +349,82 @@ public class MenuPrincipal extends JFrame {
         pagos.guardar();
     }
 
-    private void abrir(String modulo) {
+    // ---------- Modulos: toggle, uno a la vez, se muestran a la derecha ----------
+
+    // Pulsar el boton: si quedo activado abre ese modulo; si quedo apagado, cierra
+    private void alternarModulo(int indice) {
+        if (botonesModulos[indice].isSelected()) abrirModulo(indice);
+        else cerrarModulo();
+    }
+
+    // Abre el modulo (cambiando el que hubiera) y deja encendido solo su boton
+    private void abrirModulo(int indice) {
         if (propiedadActual == null) return;
-        switch (modulo) {
-            case "Unidades" ->
-                new PanelUnidades(this, propiedades, propiedadActual).setVisible(true);
-            case "Contratos" ->
-                new PanelContratos(this, contratos, propiedades, pagos, mora, propiedadActual).setVisible(true);
-            case "Cobro de rentas y mora" ->
-                new PanelCobranza(this, contratos, pagos, mora, propiedades, propiedadActual).setVisible(true);
-            default -> JOptionPane.showMessageDialog(this,
-                "El módulo \"" + modulo + "\" está en proceso: sus modelos existen pero falta su servicio.",
-                modulo, JOptionPane.INFORMATION_MESSAGE);
+        for (int j = 0; j < botonesModulos.length; j++) {
+            botonesModulos[j].setSelected(j == indice);
+        }
+        vistaModulo.removeAll();   // el modulo anterior (si habia) deja de refrescarse
+        vistaModulo.add(crearVistaModulo(opciones[indice].titulo()), BorderLayout.CENTER);
+        expandir();
+        vistaModulo.revalidate();
+        vistaModulo.repaint();
+    }
+
+    private JComponent crearVistaModulo(String modulo) {
+        return switch (modulo) {
+            case "Unidades" -> new PanelUnidades(propiedades, propiedadActual);
+            case "Contratos" -> new PanelContratos(contratos, propiedades, pagos, mora, propiedadActual);
+            case "Cobro de rentas y mora" -> new PanelCobranza(contratos, pagos, mora, propiedades, propiedadActual);
+            default -> panelEnProceso(modulo);
+        };
+    }
+
+    private JPanel panelEnProceso(String modulo) {
+        JPanel p = new JPanel(new GridBagLayout());
+        p.add(new JLabel("<html><center>El módulo \"" + modulo + "\" está en proceso:<br>"
+            + "sus modelos existen pero falta su servicio.</center></html>"));
+        return p;
+    }
+
+    // La ventana crece hacia la derecha; el menu conserva su ancho
+    private void expandir() {
+        if (expandida) return;
+        expandida = true;
+        anchoVentanaMenu = getWidth();
+        contenedor.setPreferredSize(new Dimension(contenedor.getWidth(), 0));
+        getContentPane().remove(contenedor);
+        add(contenedor, BorderLayout.WEST);
+        add(vistaModulo, BorderLayout.CENTER);
+        setSize(getWidth() + ANCHO_MODULO, getHeight());
+        acomodarEnPantalla();
+        revalidate();
+        repaint();
+    }
+
+    // Apaga los botones, quita el modulo y devuelve la ventana a su ancho de menu
+    private void cerrarModulo() {
+        for (JToggleButton b : botonesModulos) b.setSelected(false);
+        if (!expandida) return;
+        expandida = false;
+        vistaModulo.removeAll();
+        getContentPane().remove(vistaModulo);
+        getContentPane().remove(contenedor);
+        contenedor.setPreferredSize(null);
+        add(contenedor, BorderLayout.CENTER);
+        setSize(anchoVentanaMenu, getHeight());
+        revalidate();
+        repaint();
+    }
+
+    // Si al crecer se sale por la derecha de la pantalla, se corre a la izquierda lo justo
+    private void acomodarEnPantalla() {
+        GraphicsConfiguration gc = getGraphicsConfiguration();
+        if (gc == null) return;
+        Rectangle pantalla = gc.getBounds();
+        Insets bordes = Toolkit.getDefaultToolkit().getScreenInsets(gc);
+        int derecha = pantalla.x + pantalla.width - bordes.right;
+        if (getX() + getWidth() > derecha) {
+            setLocation(Math.max(pantalla.x + bordes.left, derecha - getWidth()), getY());
         }
     }
 

@@ -1,15 +1,13 @@
 package inmobiliaria.ui;
 
 import java.awt.Component;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.HierarchyEvent;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JDialog;
 import javax.swing.JList;
 import javax.swing.Timer;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
@@ -151,20 +149,22 @@ public class Dialogos {
         return b;
     }
 
-    // Llama a accion cada segundo mientras la ventana este visible; se detiene al cerrarla.
+    // Llama a accion cada segundo mientras el panel este visible; se detiene cuando el panel
+    // se quita de la ventana (al cerrar el modulo).
     // Como poblar() no toca la tabla si nada cambio, el costo es leer los datos una vez por segundo.
-    public static void autoRefrescar(JDialog ventana, Runnable accion) {
+    public static void autoRefrescar(JComponent panel, Runnable accion) {
         Timer t = new Timer(1000, e -> {
-            if (!ventana.isShowing()) return;
+            if (!panel.isShowing()) return;
             try {
                 accion.run();
             } catch (RuntimeException ex) {
-                // un dato pudo cambiar a medio refresco (p. ej. una baja en otra ventana): el siguiente tick reintenta
+                // un dato pudo cambiar a medio refresco (p. ej. una baja): el siguiente tick reintenta
             }
         });
-        ventana.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-        ventana.addWindowListener(new WindowAdapter() {
-            @Override public void windowClosed(WindowEvent e) { t.stop(); }
+        panel.addHierarchyListener(e -> {
+            if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0 && !panel.isDisplayable()) {
+                t.stop();
+            }
         });
         t.start();
     }

@@ -2,12 +2,10 @@ package inmobiliaria.ui;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.awt.Frame;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -28,17 +26,16 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  * Usa PropiedadService (Integrante 2). Las unidades nacen DISPONIBLE o EN_MANTENIMIENTO;
  * ALQUILADA solo la pone el modulo de contratos al activar uno.
  * El codigo se asigna solo (UNI-001, ...) y no se muestra: la columna esta oculta pero sigue en el modelo.
- * La ventana no es modal (se pueden abrir varias) y se refresca sola cada segundo.
+ * Es un panel que MenuPrincipal muestra a la derecha de la ventana; se refresca solo cada segundo.
  */
-public class PanelUnidades extends JDialog {
+public class PanelUnidades extends JPanel {
     private final PropiedadService propiedades;
     private final Edificio edificio;
     private final DefaultTableModel modelo =
             Dialogos.modelo("Codigo", "Direccion", "Tipo", "Precio (S/)", "Estado");
     private final JTable tabla = Dialogos.tabla(modelo);
 
-    public PanelUnidades(Frame dueno, PropiedadService propiedades, Edificio edificio) {
-        super(dueno, "Unidades - " + edificio.getNombre(), false);
+    public PanelUnidades(PropiedadService propiedades, Edificio edificio) {
         this.propiedades = propiedades;
         this.edificio = edificio;
 
@@ -54,19 +51,14 @@ public class PanelUnidades extends JDialog {
         estado.addActionListener(e -> cambiarEstado());
         JButton baja = new JButton("Dar de baja");
         baja.addActionListener(e -> baja());
-        JButton cerrar = new JButton("Cerrar");
-        cerrar.addActionListener(e -> dispose());
         botones.add(nueva);
         botones.add(Dialogos.botonRefrescar(this::refrescar));
         botones.add(estado);
         botones.add(baja);
-        botones.add(cerrar);
         add(botones, BorderLayout.SOUTH);
 
         refrescar();
         Dialogos.autoRefrescar(this, this::refrescar);
-        setSize(680, 360);
-        setLocationRelativeTo(dueno);
     }
 
     private void refrescar() {

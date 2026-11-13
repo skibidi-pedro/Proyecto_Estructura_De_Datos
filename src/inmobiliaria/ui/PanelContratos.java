@@ -2,14 +2,12 @@ package inmobiliaria.ui;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
-import java.awt.Frame;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -41,10 +39,10 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  *  - cuotas al activar/renovar -> PagoService (RN-07)
  *  - deuda y mora al finalizar -> PagoService y MoraService (RN-13)
  *  - el numero de contrato se asigna solo (CON-001, ...) y no se muestra (columna oculta en la tabla)
- *  - ventana no modal (se pueden abrir varias) con refresco automatico cada segundo
+ *  - es un panel que MenuPrincipal muestra a la derecha de la ventana, con refresco automatico cada segundo
  *  - expediente completo (RN-06): el modulo Documentos esta en proceso, por ahora se confirma a mano.
  */
-public class PanelContratos extends JDialog {
+public class PanelContratos extends JPanel {
     private final ContratoService contratos;
     private final PropiedadService propiedades;
     private final PagoService pagos;
@@ -54,9 +52,8 @@ public class PanelContratos extends JDialog {
             "Numero", "Unidad", "Arrendatario", "Inicio", "Fin", "Renta (S/)", "Estado");
     private final JTable tabla = Dialogos.tabla(modelo);
 
-    public PanelContratos(Frame dueno, ContratoService contratos, PropiedadService propiedades,
+    public PanelContratos(ContratoService contratos, PropiedadService propiedades,
                           PagoService pagos, MoraService mora, Edificio edificio) {
-        super(dueno, "Contratos - " + edificio.getNombre(), false);
         this.contratos = contratos;
         this.propiedades = propiedades;
         this.pagos = pagos;
@@ -74,13 +71,10 @@ public class PanelContratos extends JDialog {
         botones.add(boton("Renovar", () -> renovar()));
         botones.add(boton("Finalizar", () -> finalizar()));
         botones.add(Dialogos.botonRefrescar(this::refrescar));
-        botones.add(boton("Cerrar", () -> dispose()));
         add(botones, BorderLayout.SOUTH);
 
         refrescar();
         Dialogos.autoRefrescar(this, this::refrescar);
-        setSize(760, 380);
-        setLocationRelativeTo(dueno);
     }
 
     private JButton boton(String texto, Runnable accion) {
