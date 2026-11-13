@@ -37,7 +37,7 @@ public class MenuPrincipal extends JFrame {
     private static final String CARD_SELECCION = "seleccion";
     private static final String CARD_MODULOS = "modulos";
 
-    private record Opcion(String titulo, String descripcion) {}
+    private record Opcion(String titulo) {}
 
     private final CardLayout cartas = new CardLayout();
     private final JPanel contenedor = new JPanel(cartas);
@@ -65,12 +65,12 @@ public class MenuPrincipal extends JFrame {
 
     // Modulos que dependen de la propiedad seleccionada
     private final Opcion[] opciones = {
-        new Opcion("Unidades", "Departamentos, casas, locales"),
-        new Opcion("Arrendatarios", "Datos y avales (en proceso)"),
-        new Opcion("Contratos", "Alta, renovación y finalización"),
-        new Opcion("Documentos", "Expediente (en proceso)"),
-        new Opcion("Cobro de rentas y mora", "Cuotas, pagos y recibos"),
-        new Opcion("Mantenimiento", "Solicitudes (en proceso)"),
+        new Opcion("Unidades"),
+        new Opcion("Arrendatarios"),
+        new Opcion("Contratos"),
+        new Opcion("Documentos"),
+        new Opcion("Cobro de rentas y mora"),
+        new Opcion("Mantenimiento"),
     };
 
     // Reportes y alertas: pendientes de conectar
@@ -99,7 +99,7 @@ public class MenuPrincipal extends JFrame {
 
         recargarPropietarios();
         mostrarSeleccion();
-        setSize(660, 520);
+        setSize(372, 625);
         setLocationRelativeTo(null);
     }
 
@@ -198,12 +198,12 @@ public class MenuPrincipal extends JFrame {
         norte.add(panelPropiedad);
         p.add(norte, BorderLayout.NORTH);
 
-        JPanel rejilla = new JPanel(new GridLayout(0, 2, 12, 12));
+        // Una sola columna: cada modulo es un boton ancho, uno debajo del otro
+        JPanel rejilla = new JPanel(new GridLayout(0, 1, 0, 10));
         rejilla.setBorder(BorderFactory.createEmptyBorder(10, 30, 20, 30));
         for (int i = 0; i < opciones.length; i++) {
             Opcion o = opciones[i];
-            JButton b = new JButton("<html><center><b>" + o.titulo() + "</b><br><small>"
-                + o.descripcion() + "</small></center></html>");
+            JButton b = new JButton("<html><center><b>" + o.titulo() + "</b></center></html>");
             b.addActionListener(e -> abrir(o.titulo()));
             b.setEnabled(false);
             botonesModulos[i] = b;
