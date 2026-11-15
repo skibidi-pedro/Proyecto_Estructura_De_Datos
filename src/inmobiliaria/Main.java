@@ -2,11 +2,16 @@ package inmobiliaria;
 
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import inmobiliaria.alertas.AlertaService;
+import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
 import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.servicio.ContratoService;
+import inmobiliaria.documentos.servicio.ExpedienteService;
+import inmobiliaria.mantenimiento.servicio.MantenimientoService;
 import inmobiliaria.nucleo.historial.Historial;
 import inmobiliaria.propiedades.servicio.PropiedadService;
+import inmobiliaria.reportes.ReporteService;
 
 /**
  * Punto de entrada. Crea los servicios, carga los CSV (2.8) y arranca el menu Swing.
@@ -21,11 +26,19 @@ public class Main {
         ContratoService contratos = new ContratoService(historial);
         PagoService pagos = new PagoService(historial);
         MoraService mora = new MoraService(pagos);
+        ArrendatarioService arrendatarios = new ArrendatarioService(historial);
+        ExpedienteService expedientes = new ExpedienteService(historial);
+        MantenimientoService mantenimiento = new MantenimientoService(historial);
+        ReporteService reportes = new ReporteService(contratos, pagos, mora, propiedades);
+        AlertaService alertas = new AlertaService(contratos, pagos, mora);
 
         try {
             propiedades.cargar();
             contratos.cargar();
             pagos.cargar();
+            arrendatarios.cargar();
+            expedientes.cargar();
+            mantenimiento.cargar();
         } catch (RuntimeException e) {
             // Si un CSV esta danado se avisa y se sale: seguir y guardar al cerrar pisaria los datos
             JOptionPane.showMessageDialog(null,
@@ -35,6 +48,7 @@ public class Main {
         }
 
         SwingUtilities.invokeLater(() ->
-            new MenuPrincipal(propiedades, contratos, pagos, mora).setVisible(true));
+            new MenuPrincipal(propiedades, contratos, pagos, mora, arrendatarios, expedientes,
+                    mantenimiento, reportes, alertas).setVisible(true));
     }
 }

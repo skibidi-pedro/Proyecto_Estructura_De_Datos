@@ -4,17 +4,27 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.time.LocalDate;
+import inmobiliaria.alertas.AlertaService;
+import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
 import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.servicio.ContratoService;
+import inmobiliaria.documentos.servicio.ExpedienteService;
+import inmobiliaria.mantenimiento.servicio.MantenimientoService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
+import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.nucleo.util.GeneradorCodigo;
 import inmobiliaria.propiedades.modelo.Edificio;
 import inmobiliaria.propiedades.modelo.Propietario;
 import inmobiliaria.propiedades.servicio.PropiedadService;
+import inmobiliaria.reportes.ReporteService;
 import inmobiliaria.ui.Dialogos;
+import inmobiliaria.ui.PanelArrendatarios;
 import inmobiliaria.ui.PanelCobranza;
 import inmobiliaria.ui.PanelContratos;
+import inmobiliaria.ui.PanelDocumentos;
+import inmobiliaria.ui.PanelMantenimiento;
 import inmobiliaria.ui.PanelUnidades;
 
 /**
@@ -28,8 +38,8 @@ import inmobiliaria.ui.PanelUnidades;
  *
  * Una "propiedad" es un edificio del propietario (Propietario > Edificio > Unidad).
  *
- * Modulos conectados: Unidades, Contratos, Cobro de rentas y mora.
- * En proceso (su servicio todavia esta vacio): Arrendatarios, Documentos, Mantenimiento.
+ * Modulos conectados: Unidades, Arrendatarios, Contratos, Documentos, Cobro de rentas y mora, Mantenimiento.
+ * Menu Reportes: Ingresos, Morosidad, Ocupacion (ReporteService) y Alertas (AlertaService).
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
@@ -54,6 +64,11 @@ public class MenuPrincipal extends JFrame {
     private final ContratoService contratos;
     private final PagoService pagos;
     private final MoraService mora;
+    private final ArrendatarioService arrendatarios;
+    private final ExpedienteService expedientes;
+    private final MantenimientoService mantenimiento;
+    private final ReporteService reporteService;
+    private final AlertaService alertaService;
 
     private final DefaultComboBoxModel<Propietario> modeloPropietarios = new DefaultComboBoxModel<>();
     private final JComboBox<Propietario> comboPropietarios = new JComboBox<>(modeloPropietarios);
@@ -80,18 +95,25 @@ public class MenuPrincipal extends JFrame {
         new Opcion("Mantenimiento"),
     };
 
-    // Reportes y alertas: pendientes de conectar
+    // Reportes y alertas (se muestran en un dialogo de texto)
     private final String[] reportes = {
         "Ingresos", "Morosidad", "Ocupación", "Alertas",
     };
 
     public MenuPrincipal(PropiedadService propiedades, ContratoService contratos,
-                         PagoService pagos, MoraService mora) {
+                         PagoService pagos, MoraService mora, ArrendatarioService arrendatarios,
+                         ExpedienteService expedientes, MantenimientoService mantenimiento,
+                         ReporteService reporteService, AlertaService alertaService) {
         super("Gestión Inmobiliaria - Grupo 6");
         this.propiedades = propiedades;
         this.contratos = contratos;
         this.pagos = pagos;
         this.mora = mora;
+        this.arrendatarios = arrendatarios;
+        this.expedientes = expedientes;
+        this.mantenimiento = mantenimiento;
+        this.reporteService = reporteService;
+        this.alertaService = alertaService;
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
@@ -336,7 +358,7 @@ public class MenuPrincipal extends JFrame {
         // Reportes ocupa el lugar que tenia Ayuda
         for (String r : reportes) {
             JMenuItem item = new JMenuItem(r);
-            item.addActionListener(e -> reportePendiente(r));
+            item.addActionListener(e -> mostrarReporte(r));
             menuReportes.add(item);
         }
         barra.add(menuReportes);
@@ -347,6 +369,9 @@ public class MenuPrincipal extends JFrame {
         propiedades.guardar();
         contratos.guardar();
         pagos.guardar();
+        arrendatarios.guardar();
+        expedientes.guardar();
+        mantenimiento.guardar();
     }
 
     // ---------- Modulos: toggle, uno a la vez, se muestran a la derecha ----------
@@ -373,17 +398,14 @@ public class MenuPrincipal extends JFrame {
     private JComponent crearVistaModulo(String modulo) {
         return switch (modulo) {
             case "Unidades" -> new PanelUnidades(propiedades, propiedadActual);
-            case "Contratos" -> new PanelContratos(contratos, propiedades, pagos, mora, propiedadActual);
+            case "Arrendatarios" -> new PanelArrendatarios(arrendatarios, contratos);
+            case "Contratos" -> new PanelContratos(contratos, propiedades, pagos, mora,
+                    arrendatarios, expedientes, propiedadActual);
+            case "Documentos" -> new PanelDocumentos(expedientes, arrendatarios);
             case "Cobro de rentas y mora" -> new PanelCobranza(contratos, pagos, mora, propiedades, propiedadActual);
-            default -> panelEnProceso(modulo);
+            case "Mantenimiento" -> new PanelMantenimiento(mantenimiento, propiedades, propiedadActual);
+            default -> throw new IllegalArgumentException("Módulo desconocido: " + modulo);
         };
-    }
-
-    private JPanel panelEnProceso(String modulo) {
-        JPanel p = new JPanel(new GridBagLayout());
-        p.add(new JLabel("<html><center>El módulo \"" + modulo + "\" está en proceso:<br>"
-            + "sus modelos existen pero falta su servicio.</center></html>"));
-        return p;
     }
 
     // La ventana crece hacia la derecha; el menu conserva su ancho
@@ -428,10 +450,51 @@ public class MenuPrincipal extends JFrame {
         }
     }
 
-    /** TODO: conectar con ReporteService y AlertaService. */
-    private void reportePendiente(String reporte) {
-        JOptionPane.showMessageDialog(this, "El reporte \"" + reporte + "\" está pendiente.",
-            "Reportes", JOptionPane.INFORMATION_MESSAGE);
+    // ---------- Reportes y alertas ----------
+    private void mostrarReporte(String reporte) {
+        try {
+            LocalDate hoy = LocalDate.now();
+            String texto;
+            switch (reporte) {
+                case "Ingresos" -> {
+                    JTextField desde = Dialogos.texto(Fechas.convertirAString(hoy.withDayOfMonth(1)));
+                    JTextField hasta = Dialogos.texto(Fechas.convertirAString(hoy));
+                    if (!Dialogos.formulario(this, "Reporte de ingresos",
+                            new String[] { "Desde (AAAA-MM-DD)", "Hasta (AAAA-MM-DD)" },
+                            new JComponent[] { desde, hasta })) return;
+                    LocalDate d = Dialogos.fecha(desde, "Desde");
+                    LocalDate h = Dialogos.fecha(hasta, "Hasta");
+                    if (h.isBefore(d))
+                        throw new IllegalArgumentException("La fecha final no puede ser anterior a la inicial");
+                    texto = reporteService.reporteIngresos(d, h);
+                }
+                case "Morosidad" -> texto = reporteService.reporteMorosidad(hoy);
+                case "Ocupación" -> texto = reporteService.reporteOcupacion();
+                default -> texto = textoAlertas(hoy);
+            }
+            mostrarTexto(reporte, texto);
+        } catch (IllegalArgumentException ex) {
+            Dialogos.error(this, ex.getMessage());
+        }
+    }
+
+    private String textoAlertas(LocalDate hoy) {
+        ListaSimple<String> alertas = alertaService.todas(hoy);
+        if (alertas.estaVacia()) return "ALERTAS al " + Fechas.convertirAString(hoy) + "\n  No hay alertas.";
+        StringBuilder sb = new StringBuilder("ALERTAS al " + Fechas.convertirAString(hoy)
+                + " (" + alertas.getTamano() + ")\n");
+        for (int i = 0; i < alertas.getTamano(); i++) {
+            sb.append("  - ").append(alertas.obtener(i)).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private void mostrarTexto(String titulo, String texto) {
+        JTextArea area = new JTextArea(texto, 16, 60);
+        area.setEditable(false);
+        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        area.setCaretPosition(0);
+        JOptionPane.showMessageDialog(this, new JScrollPane(area), titulo, JOptionPane.PLAIN_MESSAGE);
     }
 
     private void salir() {

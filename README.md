@@ -43,3 +43,20 @@ docs/                → documentación y plan de pruebas
 javac -d out $(find src -name '*.java')
 java -cp out inmobiliaria.Main
 ```
+
+## Ejecutar pruebas
+
+Las pruebas escriben en `./data/`, asi que se ejecutan desde una carpeta vacia:
+
+```
+javac -d out $(find src test -name '*.java')
+java -cp out inmobiliaria.cobranza.PruebaCobranza
+java -cp out inmobiliaria.arrendatarios.PruebaModulos
+```
+
+## Modulos del menu
+
+Unidades, Arrendatarios, Contratos, Documentos, Cobro de rentas y mora y Mantenimiento
+se abren como paneles a la derecha de la ventana. El menu Reportes muestra Ingresos,
+Morosidad, Ocupacion y Alertas. Un contrato solo se activa con el expediente completo
+(identidad + contrato firmado, RN-06).

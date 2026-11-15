@@ -14,12 +14,16 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
+import inmobiliaria.arrendatarios.modelo.Arrendatario;
+import inmobiliaria.arrendatarios.modelo.EstadoArrendatario;
+import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
 import inmobiliaria.cobranza.modelo.Cuota;
 import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.modelo.Contrato;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.contratos.servicio.LiquidacionGarantia;
+import inmobiliaria.documentos.servicio.ExpedienteService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.nucleo.util.GeneradorCodigo;
@@ -40,24 +44,30 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  *  - deuda y mora al finalizar -> PagoService y MoraService (RN-13)
  *  - el numero de contrato se asigna solo (CON-001, ...) y no se muestra (columna oculta en la tabla)
  *  - es un panel que MenuPrincipal muestra a la derecha de la ventana, con refresco automatico cada segundo
- *  - expediente completo (RN-06): el modulo Documentos esta en proceso, por ahora se confirma a mano.
+ *  - arrendatario            -> se elige de ArrendatarioService (los inactivos no aparecen)
+ *  - expediente completo (RN-06) -> ExpedienteService, antes de activar el contrato
  */
 public class PanelContratos extends JPanel {
     private final ContratoService contratos;
     private final PropiedadService propiedades;
     private final PagoService pagos;
     private final MoraService mora;
+    private final ArrendatarioService arrendatarios;
+    private final ExpedienteService expedientes;
     private final Edificio edificio;
     private final DefaultTableModel modelo = Dialogos.modelo(
             "Numero", "Unidad", "Arrendatario", "Inicio", "Fin", "Renta (S/)", "Estado");
     private final JTable tabla = Dialogos.tabla(modelo);
 
     public PanelContratos(ContratoService contratos, PropiedadService propiedades,
-                          PagoService pagos, MoraService mora, Edificio edificio) {
+                          PagoService pagos, MoraService mora, ArrendatarioService arrendatarios,
+                          ExpedienteService expedientes, Edificio edificio) {
         this.contratos = contratos;
         this.propiedades = propiedades;
         this.pagos = pagos;
         this.mora = mora;
+        this.arrendatarios = arrendatarios;
+        this.expedientes = expedientes;
         this.edificio = edificio;
 
         setLayout(new BorderLayout(8, 8));
@@ -138,7 +148,16 @@ public class PanelContratos extends JPanel {
                     "No hay unidades disponibles en esta propiedad. Registrelas en el modulo Unidades.");
 
         Dialogos.mostrarComo(unidades, u -> u.getDireccion() + " | " + u.getTipo() + " | S/ " + Dialogos.dinero(u.getPrecio()));
-        JTextField documento = Dialogos.texto("");
+
+        JComboBox<Arrendatario> inquilinos = new JComboBox<>();
+        ListaSimple<Arrendatario> registrados = arrendatarios.listar();
+        for (int i = 0; i < registrados.getTamano(); i++) {
+            if (registrados.obtener(i).getEstado() != EstadoArrendatario.INACTIVO) inquilinos.addItem(registrados.obtener(i));
+        }
+        if (inquilinos.getItemCount() == 0)
+            throw new IllegalArgumentException(
+                    "No hay arrendatarios activos. Registrelos en el modulo Arrendatarios.");
+        Dialogos.mostrarComo(inquilinos, a -> a.getNombresCompletos() + " (" + a.getDocumentoIdentidad() + ")");
         JTextField inicio = Dialogos.texto(Fechas.convertirAString(hoy()));
         JTextField fin = Dialogos.texto(Fechas.convertirAString(hoy().plusYears(1)));
         JTextField renta = Dialogos.texto(Dialogos.dinero(((Unidad) unidades.getSelectedItem()).getPrecio()));
@@ -154,13 +173,13 @@ public class PanelContratos extends JPanel {
         });
 
         if (!Dialogos.formulario(this, "Nuevo contrato",
-                new String[] { "Documento del arrendatario", "Unidad",
+                new String[] { "Arrendatario", "Unidad",
                         "Inicio (AAAA-MM-DD)", "Fin (AAAA-MM-DD)", "Renta mensual (S/)",
                         "Dia de pago (1-28)", "Garantia (S/)", "Clausulas" },
-                new JComponent[] { documento, unidades, inicio, fin, renta, diaPago, garantia, clausulas }))
+                new JComponent[] { inquilinos, unidades, inicio, fin, renta, diaPago, garantia, clausulas }))
             return;
 
-        String doc = documento.getText().trim();
+        String doc = ((Arrendatario) inquilinos.getSelectedItem()).getDocumentoIdentidad();
         Unidad unidad = (Unidad) unidades.getSelectedItem();
         String numero = GeneradorCodigo.siguiente("CON",
                 Dialogos.codigos(contratos.listar(), Contrato::getNumero));
@@ -178,11 +197,11 @@ public class PanelContratos extends JPanel {
     // ---------- Activar (RN-06) + estado de unidad + cuotas (RN-07) ----------
     private void activar() {
         Contrato c = seleccionado();
-        // TODO: reemplazar por ExpedienteService cuando el modulo Documentos este terminado (RN-06)
-        boolean completo = Dialogos.confirmar(this, "Expediente",
-                "El expediente del arrendatario " + c.getDocumentoArrendatario() + " esta completo?\n"
-                + "(documento de identidad y contrato firmado)\n\n"
-                + "El modulo Documentos esta en proceso, por eso se confirma a mano.");
+        boolean completo = expedientes.expedienteCompleto(c.getDocumentoArrendatario());
+        if (!completo)
+            throw new IllegalArgumentException("El expediente de " + c.getDocumentoArrendatario()
+                    + " esta incompleto. Falta: " + expedientes.faltantes(c.getDocumentoArrendatario())
+                    + ".\nRegistrelo en el modulo Documentos.");
         contratos.activar(c.getNumero(), completo);
         propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.ALQUILADA);
         ListaSimple<Cuota> cuotas = pagos.generarCuotas(c);
