@@ -126,6 +126,19 @@ public class PagoService {
         return resultado;
     }
 
+    // Anexa (o reemplaza) el comprobante de pago de un recibo: foto, PDF o Word.
+    // Se copia a data/archivos/recibos/Recibo-000001.<ext>. El monto y el saldo no cambian (RN-10).
+    public Recibo anexarComprobante(int numeroRecibo, java.io.File origen) {
+        Recibo r = buscarRecibo(numeroRecibo);
+        if (r == null) throw new IllegalArgumentException("No existe el recibo " + numeroRecibo);
+        String anterior = r.getComprobante();
+        String ruta = inmobiliaria.nucleo.util.Archivos.copiar(origen, "recibos", "Recibo-" + String.format("%06d", numeroRecibo));
+        r.setComprobante(ruta);
+        if (!anterior.isEmpty() && !anterior.equals(ruta)) inmobiliaria.nucleo.util.Archivos.eliminar(anterior);
+        historial.registrarOperacion("Comprobante anexado al recibo " + r.getCodigo());
+        return r;
+    }
+
     public Recibo buscarRecibo(int numero) {
         for (int i = 0; i < recibos.getTamano(); i++) {
             if (recibos.obtener(i).getNumero() == numero) return recibos.obtener(i);

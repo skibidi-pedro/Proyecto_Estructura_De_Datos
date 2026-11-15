@@ -60,3 +60,13 @@ Unidades, Arrendatarios, Contratos, Documentos, Cobro de rentas y mora y Manteni
 se abren como paneles a la derecha de la ventana. El menu Reportes muestra Ingresos,
 Morosidad, Ocupacion y Alertas. Un contrato solo se activa con el expediente completo
 (identidad + contrato firmado, RN-06).
+
+- **Documentos:** cada documento es un archivo anexado (PDF, Word o foto). Se copia a
+  `data/archivos/<documento>/` como `Identidad.jpg`, `Contrato.pdf`, etc.; la columna Archivo
+  muestra el nombre y con doble clic se abre. Al completar el expediente, si el arrendatario
+  tiene un contrato pendiente, el sistema pregunta si activarlo (Si / No).
+- **Recibos:** al registrar un pago se puede anexar el comprobante (foto o PDF). En
+  "Ver recibos", doble clic abre el comprobante y "Anexar comprobante" lo agrega o reemplaza
+  despues. Se guardan en `data/archivos/recibos/`.
+- **Arrendatarios:** el aval es un solo campo de texto opcional.
+- `data/archivos/` esta en `.gitignore`: son documentos personales.

@@ -45,7 +45,8 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  *  - el numero de contrato se asigna solo (CON-001, ...) y no se muestra (columna oculta en la tabla)
  *  - es un panel que MenuPrincipal muestra a la derecha de la ventana, con refresco automatico cada segundo
  *  - arrendatario            -> se elige de ArrendatarioService (los inactivos no aparecen)
- *  - expediente completo (RN-06) -> ExpedienteService, antes de activar el contrato
+ *  - expediente completo (RN-06) -> ExpedienteService, antes de activar el contrato (ver Activacion)
+ *  - el contrato ya no lleva clausulas en pantalla: el contrato firmado se anexa en Documentos
  */
 public class PanelContratos extends JPanel {
     private final ContratoService contratos;
@@ -163,7 +164,6 @@ public class PanelContratos extends JPanel {
         JTextField renta = Dialogos.texto(Dialogos.dinero(((Unidad) unidades.getSelectedItem()).getPrecio()));
         JTextField diaPago = Dialogos.texto("5");
         JTextField garantia = Dialogos.texto(renta.getText());
-        JTextField clausulas = Dialogos.texto("");
         unidades.addActionListener(e -> {
             Unidad u = (Unidad) unidades.getSelectedItem();
             if (u != null) {
@@ -175,8 +175,8 @@ public class PanelContratos extends JPanel {
         if (!Dialogos.formulario(this, "Nuevo contrato",
                 new String[] { "Arrendatario", "Unidad",
                         "Inicio (AAAA-MM-DD)", "Fin (AAAA-MM-DD)", "Renta mensual (S/)",
-                        "Dia de pago (1-28)", "Garantia (S/)", "Clausulas" },
-                new JComponent[] { inquilinos, unidades, inicio, fin, renta, diaPago, garantia, clausulas }))
+                        "Dia de pago (1-28)", "Garantia (S/)" },
+                new JComponent[] { inquilinos, unidades, inicio, fin, renta, diaPago, garantia }))
             return;
 
         String doc = ((Arrendatario) inquilinos.getSelectedItem()).getDocumentoIdentidad();
@@ -186,25 +186,29 @@ public class PanelContratos extends JPanel {
         Contrato c = contratos.crear(numero, doc, unidad.getCodigo(),
                 Dialogos.fecha(inicio, "Inicio"), Dialogos.fecha(fin, "Fin"),
                 Dialogos.numero(renta, "Renta"), Dialogos.entero(diaPago, "Dia de pago"),
-                Dialogos.numero(garantia, "Garantia"), clausulas.getText(),
+                Dialogos.numero(garantia, "Garantia"), "",
                 propiedades.unidadDisponible(unidad.getCodigo()),
                 mora.esMoroso(doc, contratos.listar(), hoy()));
         GeneradorCodigo.marcarUsado(numero);
         refrescar();
+        if (expedientes.expedienteCompleto(doc)) {
+            // sus documentos ya estaban registrados: se pregunta si se activa de una vez
+            if (Dialogos.confirmar(this, "Documentos registrados",
+                    "Los documentos de " + doc + " ya estan registrados.\nActivar el contrato ahora?")) {
+                activarContrato(c);
+                return;
+            }
+        }
         Dialogos.info(this, "Contrato", "Contrato creado para " + doc + " (pendiente de activar).");
     }
 
     // ---------- Activar (RN-06) + estado de unidad + cuotas (RN-07) ----------
     private void activar() {
-        Contrato c = seleccionado();
-        boolean completo = expedientes.expedienteCompleto(c.getDocumentoArrendatario());
-        if (!completo)
-            throw new IllegalArgumentException("El expediente de " + c.getDocumentoArrendatario()
-                    + " esta incompleto. Falta: " + expedientes.faltantes(c.getDocumentoArrendatario())
-                    + ".\nRegistrelo en el modulo Documentos.");
-        contratos.activar(c.getNumero(), completo);
-        propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.ALQUILADA);
-        ListaSimple<Cuota> cuotas = pagos.generarCuotas(c);
+        activarContrato(seleccionado());
+    }
+
+    private void activarContrato(Contrato c) {
+        ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos, expedientes);
         refrescar();
         Dialogos.info(this, "Contrato", "Contrato de " + c.getDocumentoArrendatario() + " activado.\n"
                 + "Se generaron " + cuotas.getTamano() + " cuotas mensuales.");

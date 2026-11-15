@@ -5,14 +5,16 @@ import java.awt.FlowLayout;
 import java.util.ArrayList;
 import java.util.List;
 import java.time.LocalDate;
+import java.io.File;
 import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.SwingUtilities;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import inmobiliaria.cobranza.modelo.Cuota;
@@ -23,6 +25,7 @@ import inmobiliaria.contratos.modelo.Contrato;
 import inmobiliaria.contratos.modelo.EstadoContrato;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
+import inmobiliaria.nucleo.util.Archivos;
 import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.propiedades.modelo.Edificio;
 import inmobiliaria.propiedades.modelo.Unidad;
@@ -141,7 +144,8 @@ public class PanelCobranza extends JPanel {
     private String textoRecibo(Recibo r) {
         return Fechas.convertirAString(r.getFecha()) + " | cuota " + r.getNumeroCuota()
                 + " | pagado S/ " + Dialogos.dinero(r.getMontoPagado())
-                + " | saldo de la cuota S/ " + Dialogos.dinero(r.getSaldoCuota());
+                + " | saldo de la cuota S/ " + Dialogos.dinero(r.getSaldoCuota())
+                + (r.getComprobante().isEmpty() ? "" : " | comprobante " + Archivos.nombre(r.getComprobante()));
     }
 
     private String estado(Cuota c) {
@@ -190,36 +194,101 @@ public class PanelCobranza extends JPanel {
         }
         JTextField monto = Dialogos.texto(Dialogos.dinero(cuota.getSaldo()));
         JTextField fecha = Dialogos.texto(Fechas.convertirAString(hoy()));
+        JTextField comprobante = Dialogos.texto("");
         if (!Dialogos.formulario(this, "Pago de la cuota " + cuota.getNumero(),
-                new String[] { "Saldo de la cuota (S/)", "Monto a pagar (S/)", "Fecha (AAAA-MM-DD)" },
-                new JComponent[] { soloLectura(Dialogos.dinero(cuota.getSaldo())), monto, fecha })) return;
+                new String[] { "Saldo de la cuota (S/)", "Monto a pagar (S/)", "Fecha (AAAA-MM-DD)",
+                        "Comprobante (foto o PDF, opcional)" },
+                new JComponent[] { soloLectura(Dialogos.dinero(cuota.getSaldo())), monto, fecha,
+                        Dialogos.campoArchivo(this, comprobante) })) return;
         try {
             Recibo r = pagos.registrarPago(c.getNumero(), cuota.getNumero(),
                     Dialogos.numero(monto, "Monto"), Dialogos.fecha(fecha, "Fecha"));
+            String aviso = "";
+            if (!comprobante.getText().isEmpty()) {
+                try {
+                    pagos.anexarComprobante(r.getNumero(), new File(comprobante.getText()));
+                } catch (IllegalArgumentException ex) {
+                    aviso = "\n\nEl pago quedo registrado, pero el comprobante no se anexo: " + ex.getMessage()
+                            + "\nPuede anexarlo despues desde \"Ver recibos\".";
+                }
+            }
             refrescar();
-            Dialogos.info(this, "Recibo emitido", textoRecibo(r));
+            Dialogos.info(this, "Recibo emitido", textoRecibo(r) + aviso);
         } catch (IllegalArgumentException ex) {
             Dialogos.error(this, ex.getMessage());
         }
     }
 
+    // ---------- Recibos del contrato: doble clic en una fila abre el comprobante ----------
     private void verRecibos() {
         Contrato c = (Contrato) comboContratos.getSelectedItem();
         if (c == null) {
             Dialogos.error(this, "No hay un contrato seleccionado.");
             return;
         }
-        StringBuilder sb = new StringBuilder();
-        ListaSimple<Recibo> todos = pagos.listarRecibos();
-        for (int i = 0; i < todos.getTamano(); i++) {
-            if (todos.obtener(i).getNumeroContrato().equals(c.getNumero()))
-                sb.append(textoRecibo(todos.obtener(i))).append("\n");
+        DefaultTableModel modeloRecibos = Dialogos.modelo("Numero", "Fecha", "Cuota", "Pagado (S/)",
+                "Saldo de la cuota (S/)", "Comprobante");
+        JTable tablaRecibos = Dialogos.tabla(modeloRecibos);
+        Dialogos.ocultarColumna(tablaRecibos, 0);
+        Runnable cargar = () -> {
+            modeloRecibos.setRowCount(0);
+            ListaSimple<Recibo> todos = pagos.listarRecibos();
+            for (int i = 0; i < todos.getTamano(); i++) {
+                Recibo r = todos.obtener(i);
+                if (!r.getNumeroContrato().equals(c.getNumero())) continue;
+                modeloRecibos.addRow(new Object[] { r.getNumero(), Fechas.convertirAString(r.getFecha()),
+                        r.getNumeroCuota(), Dialogos.dinero(r.getMontoPagado()),
+                        Dialogos.dinero(r.getSaldoCuota()),
+                        r.getComprobante().isEmpty() ? "-" : Archivos.nombre(r.getComprobante()) });
+            }
+        };
+        cargar.run();
+
+        Runnable abrir = () -> accion(() -> {
+            Recibo r = reciboSeleccionado(tablaRecibos);
+            if (r.getComprobante().isEmpty())
+                throw new IllegalArgumentException("Este recibo todavia no tiene comprobante. Use \"Anexar comprobante\".");
+            Archivos.abrir(r.getComprobante());
+        });
+        Dialogos.alDobleClick(tablaRecibos, abrir);
+
+        JDialog dialogo = new JDialog(SwingUtilities.getWindowAncestor(this),
+                "Recibos de " + c.getDocumentoArrendatario(), java.awt.Dialog.ModalityType.APPLICATION_MODAL);
+        JButton anexar = new JButton("Anexar comprobante");
+        anexar.addActionListener(e -> accion(() -> {
+            Recibo r = reciboSeleccionado(tablaRecibos);
+            File f = Dialogos.elegirArchivo(dialogo);
+            if (f == null) return;
+            pagos.anexarComprobante(r.getNumero(), f);
+            cargar.run();
+        }));
+        JButton cerrar = new JButton("Cerrar");
+        cerrar.addActionListener(e -> dialogo.dispose());
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        botones.add(anexar);
+        botones.add(cerrar);
+
+        dialogo.setLayout(new BorderLayout(6, 6));
+        dialogo.add(new JLabel("  Doble clic en un recibo para abrir su comprobante (foto, PDF)."), BorderLayout.NORTH);
+        dialogo.add(new JScrollPane(tablaRecibos), BorderLayout.CENTER);
+        dialogo.add(botones, BorderLayout.SOUTH);
+        dialogo.setSize(620, 320);
+        dialogo.setLocationRelativeTo(this);
+        dialogo.setVisible(true);
+    }
+
+    private Recibo reciboSeleccionado(JTable t) {
+        Object numero = Dialogos.seleccionado(t, 0);
+        if (numero == null) throw new IllegalArgumentException("Seleccione un recibo de la tabla.");
+        return pagos.buscarRecibo((Integer) numero);
+    }
+
+    private void accion(Runnable r) {
+        try {
+            r.run();
+        } catch (IllegalArgumentException ex) {
+            Dialogos.error(this, ex.getMessage());
         }
-        if (sb.length() == 0) sb.append("Este contrato todavia no tiene recibos.");
-        JTextArea area = new JTextArea(sb.toString(), 10, 60);
-        area.setEditable(false);
-        javax.swing.JOptionPane.showMessageDialog(this, new JScrollPane(area),
-                "Recibos de " + c.getDocumentoArrendatario(), javax.swing.JOptionPane.PLAIN_MESSAGE);
     }
 
     private JTextField soloLectura(String texto) {

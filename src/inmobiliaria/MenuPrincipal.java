@@ -401,7 +401,7 @@ public class MenuPrincipal extends JFrame {
             case "Arrendatarios" -> new PanelArrendatarios(arrendatarios, contratos);
             case "Contratos" -> new PanelContratos(contratos, propiedades, pagos, mora,
                     arrendatarios, expedientes, propiedadActual);
-            case "Documentos" -> new PanelDocumentos(expedientes, arrendatarios);
+            case "Documentos" -> new PanelDocumentos(expedientes, arrendatarios, contratos, propiedades, pagos);
             case "Cobro de rentas y mora" -> new PanelCobranza(contratos, pagos, mora, propiedades, propiedadActual);
             case "Mantenimiento" -> new PanelMantenimiento(mantenimiento, propiedades, propiedadActual);
             default -> throw new IllegalArgumentException("Módulo desconocido: " + modulo);

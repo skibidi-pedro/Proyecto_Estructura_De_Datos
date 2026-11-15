@@ -133,6 +133,26 @@ public class PruebaCobranza {
         Recibo r3 = recargado.registrarPago("C1", 2, 100, LocalDate.of(2026, 3, 21));
         verificar("CSV: el recibo sigue la numeracion (3)", r3.getNumero() == 3);
 
+        // ---- Comprobante de pago (foto o PDF anexado al recibo) ----
+        try {
+            java.io.File foto = java.io.File.createTempFile("voucher", ".jpg");
+            verificar("Un recibo nuevo no tiene comprobante", r3.getComprobante().isEmpty());
+            recargado.anexarComprobante(r3.getNumero(), foto);
+            verificar("El comprobante se copia como Recibo-000003.jpg",
+                    inmobiliaria.nucleo.util.Archivos.nombre(r3.getComprobante()).equals("Recibo-000003.jpg")
+                    && new java.io.File(r3.getComprobante()).isFile());
+            verificar("Anexar el comprobante no cambia el monto ni el saldo (RN-10)",
+                    r3.getMontoPagado() == 100 && r3.getSaldoCuota() == 500);
+            verificar("No se anexa a un recibo inexistente", lanza(() -> recargado.anexarComprobante(99, foto)));
+            recargado.guardar();
+            PagoService otra = new PagoService(new Historial());
+            otra.cargar();
+            verificar("CSV: se conserva el comprobante", otra.buscarRecibo(3).getComprobante().equals(r3.getComprobante()));
+            verificar("CSV: los recibos sin comprobante cargan vacios", otra.buscarRecibo(1).getComprobante().isEmpty());
+        } catch (java.io.IOException e) {
+            verificar("No se pudo crear el archivo temporal: " + e.getMessage(), false);
+        }
+
         System.out.println(fallos == 0 ? "\nTodas las pruebas pasaron." : "\nFallaron " + fallos + " pruebas.");
         if (fallos > 0) System.exit(1);
     }

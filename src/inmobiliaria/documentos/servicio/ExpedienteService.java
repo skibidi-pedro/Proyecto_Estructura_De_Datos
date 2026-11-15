@@ -1,5 +1,6 @@
 package inmobiliaria.documentos.servicio;
 
+import java.io.File;
 import java.time.LocalDate;
 import inmobiliaria.documentos.modelo.Documento;
 import inmobiliaria.documentos.modelo.EstadoDocumento;
@@ -9,6 +10,7 @@ import inmobiliaria.nucleo.estructuras.ListaSimple;
 import inmobiliaria.nucleo.historial.Historial;
 import inmobiliaria.nucleo.persistencia.GestorCSV;
 import inmobiliaria.nucleo.persistencia.Persistible;
+import inmobiliaria.nucleo.util.Archivos;
 import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.nucleo.util.Validador;
 
@@ -56,6 +58,27 @@ public class ExpedienteService {
             d.setRutaArchivo(rutaArchivo);
         }
         historial.registrarOperacion("Documento " + tipo + " recibido de " + e.getDocumentoIdentidadArrendatario());
+        return d;
+    }
+
+    // ---------- Anexar un archivo (PDF, Word o foto) como documento recibido ----------
+    // Se copia a data/archivos/<documento del arrendatario>/ con el nombre del tipo:
+    // Identidad.jpg, Contrato.pdf, ... Si ya habia uno de ese tipo, se reemplaza.
+    public Documento anexarArchivo(String documentoArrendatario, TipoDocumento tipo,
+                                   File origen, LocalDate fecha) {
+        if (!Validador.esTextoValido(documentoArrendatario))
+            throw new IllegalArgumentException("Falta el documento del arrendatario");
+        if (tipo == null)
+            throw new IllegalArgumentException("Falta el tipo de documento");
+
+        Expediente e = buscarExpediente(documentoArrendatario);
+        Documento previo = e == null ? null : e.buscarPorTipo(tipo);
+        String rutaAnterior = previo == null ? "" : previo.getRutaArchivo();
+
+        String nombreBase = tipo == TipoDocumento.IDENTIDAD ? "Identidad" : "Contrato";
+        String ruta = Archivos.copiar(origen, documentoArrendatario.trim(), nombreBase);
+        Documento d = registrarDocumento(documentoArrendatario, tipo, ruta, fecha);
+        if (!rutaAnterior.isEmpty() && !rutaAnterior.equals(ruta)) Archivos.eliminar(rutaAnterior);
         return d;
     }
 

@@ -16,32 +16,49 @@ import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import inmobiliaria.arrendatarios.modelo.Arrendatario;
 import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
+import inmobiliaria.cobranza.modelo.Cuota;
+import inmobiliaria.cobranza.servicio.PagoService;
+import inmobiliaria.contratos.modelo.Contrato;
+import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.documentos.modelo.Documento;
 import inmobiliaria.documentos.modelo.EstadoDocumento;
 import inmobiliaria.documentos.modelo.Expediente;
 import inmobiliaria.documentos.modelo.TipoDocumento;
 import inmobiliaria.documentos.servicio.ExpedienteService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
-import inmobiliaria.nucleo.util.Fechas;
+import inmobiliaria.nucleo.util.Archivos;
+import inmobiliaria.propiedades.modelo.Unidad;
+import inmobiliaria.propiedades.servicio.PropiedadService;
 
 /**
  * Expediente de un arrendatario: documento de identidad y contrato firmado (RN-06).
- * Se elige al arrendatario arriba y la tabla muestra el estado de cada documento requerido.
- * Un contrato solo se activa cuando el expediente esta completo (lo verifica PanelContratos).
+ * Cada documento es un archivo anexado (PDF, Word o foto): la columna Archivo muestra su nombre
+ * (Identidad.jpg, Contrato.pdf) y con doble clic se abre.
+ *
+ * Al anexar un documento, si el expediente queda completo y el arrendatario tiene contratos
+ * pendientes, se pregunta si activarlos (Si / No); al activar se pasa la unidad a ALQUILADA
+ * y se generan las cuotas (ver Activacion).
  * Es un panel que MenuPrincipal muestra a la derecha de la ventana; se refresca solo cada segundo.
  */
 public class PanelDocumentos extends JPanel {
     private final ExpedienteService expedientes;
     private final ArrendatarioService arrendatarios;
+    private final ContratoService contratos;
+    private final PropiedadService propiedades;
+    private final PagoService pagos;
     private final JComboBox<Arrendatario> comboArrendatarios = new JComboBox<>();
     private final DefaultTableModel modelo = Dialogos.modelo("Documento", "Estado", "Fecha", "Archivo");
     private final JTable tabla = Dialogos.tabla(modelo);
     private final JLabel resumen = new JLabel(" ");
     private int cantidadAnterior = -1;
 
-    public PanelDocumentos(ExpedienteService expedientes, ArrendatarioService arrendatarios) {
+    public PanelDocumentos(ExpedienteService expedientes, ArrendatarioService arrendatarios,
+                           ContratoService contratos, PropiedadService propiedades, PagoService pagos) {
         this.expedientes = expedientes;
         this.arrendatarios = arrendatarios;
+        this.contratos = contratos;
+        this.propiedades = propiedades;
+        this.pagos = pagos;
 
         setLayout(new BorderLayout(8, 8));
         Dialogos.mostrarComo(comboArrendatarios, a -> a.getNombresCompletos() + " (" + a.getDocumentoIdentidad() + ")");
@@ -56,11 +73,12 @@ public class PanelDocumentos extends JPanel {
         add(centro, BorderLayout.CENTER);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        botones.add(boton("Registrar documento", this::registrar));
+        botones.add(boton("Anexar documento", this::anexar));
         botones.add(boton("Marcar vencido", this::marcarVencido));
         botones.add(Dialogos.botonRefrescar(this::refrescar));
         add(botones, BorderLayout.SOUTH);
 
+        Dialogos.alDobleClick(tabla, () -> ejecutar(this::abrir));
         comboArrendatarios.addActionListener(e -> refrescar());
         cargarArrendatarios();
         refrescar();
@@ -69,14 +87,16 @@ public class PanelDocumentos extends JPanel {
 
     private JButton boton(String texto, Runnable accion) {
         JButton b = new JButton(texto);
-        b.addActionListener(e -> {
-            try {
-                accion.run();
-            } catch (IllegalArgumentException ex) {
-                Dialogos.error(this, ex.getMessage());
-            }
-        });
+        b.addActionListener(e -> ejecutar(accion));
         return b;
+    }
+
+    private void ejecutar(Runnable accion) {
+        try {
+            accion.run();
+        } catch (IllegalArgumentException ex) {
+            Dialogos.error(this, ex.getMessage());
+        }
     }
 
     // El combo se vuelve a llenar solo si cambio la cantidad de arrendatarios (alta o baja en su modulo)
@@ -110,12 +130,13 @@ public class PanelDocumentos extends JPanel {
         for (TipoDocumento t : TipoDocumento.values()) {
             Documento d = e == null ? null : e.buscarPorTipo(t);
             if (d == null) filas.add(new Object[] { t, "FALTA", "", "" });
-            else filas.add(new Object[] { t, d.getEstado(), d.getFechaRegistro(), d.getRutaArchivo() });
+            else filas.add(new Object[] { t, d.getEstado(), d.getFechaRegistro(), Archivos.nombre(d.getRutaArchivo()) });
         }
         Dialogos.poblar(tabla, modelo, filas);
         resumen.setText(expedientes.expedienteCompleto(a.getDocumentoIdentidad())
-                ? "  Expediente COMPLETO: ya se puede activar su contrato."
-                : "  Expediente INCOMPLETO. Falta: " + expedientes.faltantes(a.getDocumentoIdentidad()));
+                ? "  Expediente COMPLETO. Doble clic en un documento para abrirlo."
+                : "  Expediente INCOMPLETO. Falta: " + expedientes.faltantes(a.getDocumentoIdentidad())
+                    + ". Doble clic en un documento para abrirlo.");
     }
 
     private TipoDocumento tipoSeleccionado() {
@@ -124,20 +145,56 @@ public class PanelDocumentos extends JPanel {
         return (TipoDocumento) t;
     }
 
-    // ---------- Registrar documento recibido ----------
-    private void registrar() {
+    // ---------- Doble clic: abrir el archivo anexado ----------
+    private void abrir() {
+        Arrendatario a = elegido();
+        Documento d = documentoDe(a, tipoSeleccionado());
+        if (d == null) throw new IllegalArgumentException("Ese documento todavia no tiene un archivo anexado.");
+        Archivos.abrir(d.getRutaArchivo());
+    }
+
+    private Documento documentoDe(Arrendatario a, TipoDocumento tipo) {
+        Expediente e = expedientes.buscarExpediente(a.getDocumentoIdentidad());
+        return e == null ? null : e.buscarPorTipo(tipo);
+    }
+
+    // ---------- Anexar un archivo ----------
+    private void anexar() {
         Arrendatario a = elegido();
         JComboBox<TipoDocumento> tipo = new JComboBox<>(TipoDocumento.values());
         Object sel = Dialogos.seleccionado(tabla, 0);
         if (sel != null) tipo.setSelectedItem(sel);
         JTextField ruta = Dialogos.texto("");
-        JTextField fecha = Dialogos.texto(Fechas.convertirAString(LocalDate.now()));
         if (!Dialogos.formulario(this, "Documento de " + a.getNombresCompletos(),
-                new String[] { "Tipo", "Archivo (ruta o nombre)", "Fecha (AAAA-MM-DD)" },
-                new JComponent[] { tipo, ruta, fecha })) return;
-        expedientes.registrarDocumento(a.getDocumentoIdentidad(), (TipoDocumento) tipo.getSelectedItem(),
-                ruta.getText(), Dialogos.fecha(fecha, "Fecha"));
+                new String[] { "Tipo", "Archivo (PDF, Word o foto)" },
+                new JComponent[] { tipo, Dialogos.campoArchivo(this, ruta) })) return;
+        if (ruta.getText().isEmpty()) throw new IllegalArgumentException("Elija el archivo a anexar.");
+
+        expedientes.anexarArchivo(a.getDocumentoIdentidad(), (TipoDocumento) tipo.getSelectedItem(),
+                new java.io.File(ruta.getText()), LocalDate.now());
         refrescar();
+        ofrecerActivacion(a);
+    }
+
+    // Expediente completo + contratos pendientes: advertencia "documentos registrados, activar? Si / No"
+    private void ofrecerActivacion(Arrendatario a) {
+        if (!expedientes.expedienteCompleto(a.getDocumentoIdentidad())) return;
+        ListaSimple<Contrato> pendientes = Activacion.pendientesDe(a.getDocumentoIdentidad(), contratos);
+        for (int i = 0; i < pendientes.getTamano(); i++) {
+            Contrato c = pendientes.obtener(i);
+            Unidad u = propiedades.buscarUnidad(c.getCodigoUnidad());
+            String donde = u == null ? "(unidad dada de baja)" : u.getDireccion();
+            if (!Dialogos.confirmar(this, "Documentos registrados",
+                    "Los documentos de " + a.getNombresCompletos() + " estan registrados.\n"
+                    + "Activar su contrato de " + donde + "?")) continue;
+            try {
+                ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos, expedientes);
+                Dialogos.info(this, "Contrato", "Contrato activado.\nSe generaron " + cuotas.getTamano()
+                        + " cuotas mensuales.");
+            } catch (IllegalArgumentException ex) {
+                Dialogos.error(this, ex.getMessage());
+            }
+        }
     }
 
     private void marcarVencido() {

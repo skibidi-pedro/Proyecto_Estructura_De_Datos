@@ -1,6 +1,10 @@
 package inmobiliaria.ui;
 
+import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
 import java.awt.event.HierarchyEvent;
 import java.util.List;
 import java.util.Objects;
@@ -17,6 +21,8 @@ import java.awt.Insets;
 import java.time.LocalDate;
 import java.util.Locale;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -24,6 +30,7 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
 import javax.swing.table.DefaultTableModel;
+import inmobiliaria.nucleo.util.Archivos;
 import inmobiliaria.nucleo.util.Fechas;
 
 /**
@@ -140,6 +147,38 @@ public class Dialogos {
         for (int i = 0; i < modelo.getRowCount(); i++) {
             if (clave.equals(modelo.getValueAt(i, 0))) { tabla.setRowSelectionInterval(i, i); break; }
         }
+    }
+
+    // ---------- Archivos adjuntos ----------
+    // Cuadro para elegir un archivo (PDF, Word o imagen). Devuelve null si se cancela.
+    public static File elegirArchivo(Component padre) {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new FileNameExtensionFilter(
+                "Documentos e imagenes (pdf, doc, docx, jpg, png)", Archivos.EXTENSIONES));
+        return fc.showOpenDialog(padre) == JFileChooser.APPROVE_OPTION ? fc.getSelectedFile() : null;
+    }
+
+    // Campo de solo lectura + boton "Examinar..."; la ruta elegida queda en 'destino'
+    public static JPanel campoArchivo(Component padre, JTextField destino) {
+        destino.setEditable(false);
+        JButton examinar = new JButton("Examinar...");
+        examinar.addActionListener(e -> {
+            File f = elegirArchivo(padre);
+            if (f != null) destino.setText(f.getAbsolutePath());
+        });
+        JPanel p = new JPanel(new BorderLayout(4, 0));
+        p.add(destino, BorderLayout.CENTER);
+        p.add(examinar, BorderLayout.EAST);
+        return p;
+    }
+
+    // Doble clic sobre una fila de la tabla (el dato se lee despues con seleccionado())
+    public static void alDobleClick(JTable tabla, Runnable accion) {
+        tabla.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && tabla.rowAtPoint(e.getPoint()) >= 0) accion.run();
+            }
+        });
     }
 
     // ---------- Refresco ----------

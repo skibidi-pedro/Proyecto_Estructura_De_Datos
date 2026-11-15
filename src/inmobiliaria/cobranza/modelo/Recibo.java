@@ -7,8 +7,9 @@ import inmobiliaria.nucleo.util.Fechas;
 /**
  * Recibo con numero correlativo; inmutable.
  *
- * No tiene setters: una vez emitido no se modifica (RN-10). Los campos solo
- * se llenan en el constructor o al cargar desde el CSV.
+ * No tiene setters para el monto ni el saldo: una vez emitido no se modifica (RN-10).
+ * Esos campos solo se llenan en el constructor o al cargar desde el CSV.
+ * Lo unico que se puede anexar despues es el comprobante de pago (foto o PDF).
  *
  * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-10
@@ -20,6 +21,7 @@ public class Recibo implements Persistible {
     private LocalDate fecha;
     private double montoPagado;
     private double saldoCuota;       // lo que quedo pendiente de la cuota tras este pago
+    private String comprobante = "";  // ruta del archivo anexado (foto, PDF); vacio si no hay
 
     // Vacio, solo para desdeLineaCSV al cargar
     public Recibo() {
@@ -41,6 +43,9 @@ public class Recibo implements Persistible {
     public LocalDate getFecha() { return fecha; }
     public double getMontoPagado() { return montoPagado; }
     public double getSaldoCuota() { return saldoCuota; }
+    public String getComprobante() { return comprobante; }
+
+    public void setComprobante(String ruta) { this.comprobante = ruta == null ? "" : ruta.replace(";", ","); }
 
     // Ej: REC-000001
     public String getCodigo() {
@@ -50,7 +55,7 @@ public class Recibo implements Persistible {
     @Override
     public String aLineaCSV() {
         return numero + ";" + numeroContrato + ";" + numeroCuota + ";"
-                + Fechas.convertirAString(fecha) + ";" + montoPagado + ";" + saldoCuota;
+                + Fechas.convertirAString(fecha) + ";" + montoPagado + ";" + saldoCuota + ";" + comprobante;
     }
 
     @Override
@@ -62,6 +67,7 @@ public class Recibo implements Persistible {
         fecha = Fechas.convertirALocalDate(p[3]);
         montoPagado = Double.parseDouble(p[4]);
         saldoCuota = Double.parseDouble(p[5]);
+        comprobante = p.length > 6 ? p[6] : "";   // los CSV anteriores no tenian esta columna
     }
 
     @Override

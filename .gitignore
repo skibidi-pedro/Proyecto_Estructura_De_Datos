@@ -5,3 +5,6 @@ bin/
 *.iml
 .vscode/
 .DS_Store
+
+# Documentos y comprobantes anexados (datos personales: no se suben)
+data/archivos/
