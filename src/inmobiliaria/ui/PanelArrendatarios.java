@@ -20,6 +20,7 @@ import inmobiliaria.arrendatarios.modelo.Arrendatario;
 import inmobiliaria.arrendatarios.modelo.EstadoArrendatario;
 import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
 import inmobiliaria.contratos.modelo.Contrato;
+import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.documentos.modelo.TipoDocumento;
@@ -43,13 +44,15 @@ public class PanelArrendatarios extends JPanel {
     private final ExpedienteService expedientes;
     private final PropiedadService propiedades;
     private final PagoService pagos;
+    private final MoraService mora;
     private final DefaultTableModel modelo = Dialogos.modelo(
             "Documento", "Nombres", "Telefono", "Correo", "Archivo", "Estado");
     private final JTable tabla = Dialogos.tabla(modelo);
     private final JTextField buscar = new JTextField(10);
 
     public PanelArrendatarios(ArrendatarioService arrendatarios, ContratoService contratos,
-                              ExpedienteService expedientes, PropiedadService propiedades, PagoService pagos) {
+                              ExpedienteService expedientes, PropiedadService propiedades, PagoService pagos, MoraService mora) {
+        this.mora = mora;
         this.arrendatarios = arrendatarios;
         this.contratos = contratos;
         this.expedientes = expedientes;
@@ -71,7 +74,6 @@ public class PanelArrendatarios extends JPanel {
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
         botones.add(boton("Nuevo", this::nuevo));
         botones.add(boton("Editar", this::editar));
-        botones.add(boton("Estado", this::estado));
         botones.add(boton("Eliminar", this::eliminar));
         botones.add(Dialogos.botonRefrescar(this::refrescar));
         add(botones, BorderLayout.SOUTH);
@@ -93,6 +95,7 @@ public class PanelArrendatarios extends JPanel {
     }
 
     private void refrescar() {
+        Activacion.sincronizarEstados(arrendatarios, contratos, mora);   // estado automatico
         List<Object[]> filas = new ArrayList<>();
         ListaSimple<Arrendatario> lista = arrendatarios.listar();
         for (int i = 0; i < lista.getTamano(); i++) {
@@ -217,15 +220,6 @@ public class PanelArrendatarios extends JPanel {
             throw new IllegalArgumentException("Este arrendatario todavia no tiene documento de identidad anexado. "
                     + "Use Editar para anexarlo.");
         Archivos.abrir(ruta);
-    }
-
-    private void estado() {
-        Arrendatario a = seleccionado();
-        Object nuevo = JOptionPane.showInputDialog(this, "Nuevo estado de " + a.getNombresCompletos() + ":",
-                "Cambiar estado", JOptionPane.PLAIN_MESSAGE, null, EstadoArrendatario.values(), a.getEstado());
-        if (nuevo == null) return;
-        arrendatarios.cambiarEstado(a.getDocumentoIdentidad(), (EstadoArrendatario) nuevo);
-        refrescar();
     }
 
     private void eliminar() {

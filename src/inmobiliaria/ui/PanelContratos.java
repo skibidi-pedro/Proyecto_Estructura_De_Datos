@@ -282,11 +282,9 @@ public class PanelContratos extends JPanel {
     }
 
     private void activarContrato(Contrato c) {
-        String falta = Activacion.faltantes(c, expedientes);   // sin advertencia: solo se resalta en amarillo
         ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos);
         refrescar();
-        Dialogos.info(this, "Contrato", "Contrato de " + nombreDe(c.getDocumentoArrendatario()) + " activado"
-                + (falta.isEmpty() ? "." : " SIN todos sus documentos (falta " + falta + ").") + "\n"
+        Dialogos.info(this, "Contrato", "Contrato de " + nombreDe(c.getDocumentoArrendatario()) + " activado.\n"
                 + Activacion.resumen(c, cuotas));
     }
 

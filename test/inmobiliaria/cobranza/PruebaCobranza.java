@@ -176,6 +176,36 @@ public class PruebaCobranza {
         verificar("Liquidacion con la garantia realmente pagada",
                 contratos.finalizar("C1", 0, 0, 200, pagos.garantiaPagada(c)).getMontoADevolver() == 800);
 
+        // ---- Eliminar cuota y estado automatico del arrendatario ----
+        PagoService p2 = new PagoService(new Historial());
+        ContratoService k2 = new ContratoService(new Historial());
+        MoraService m2 = new MoraService(p2);
+        propiedades.registrarUnidad("E1", "U3", "Av. Lima 100 - 103", TipoUnidad.values()[0], 800, EstadoUnidad.NO_ALQUILADA);
+        Contrato d = k2.crear("D1", "DNI9", "U3", LocalDate.of(2026, 1, 10), LocalDate.of(2026, 3, 30), 800, 10, 800, "", true, false);
+        k2.activar("D1");
+        p2.generarCuotas(d);
+        inmobiliaria.arrendatarios.servicio.ArrendatarioService ars = new inmobiliaria.arrendatarios.servicio.ArrendatarioService(new Historial());
+        ars.registrar("DNI9", "Nueve", "", "");
+        ars.registrar("DNI8", "Ocho", "", "");
+        inmobiliaria.ui.Activacion.sincronizarEstados(ars, k2, m2);
+        verificar("Con cuotas vencidas el arrendatario pasa a MOROSO solo",
+                ars.buscar("DNI9").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.MOROSO);
+        verificar("Sin contratos queda ACTIVO",
+                ars.buscar("DNI8").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.ACTIVO);
+        p2.registrarPago("D1", 1, 800, LocalDate.now());
+        verificar("No se elimina una cuota con pagos", lanza(() -> p2.eliminarCuota("D1", 1)));
+        p2.eliminarCuota("D1", 0);
+        verificar("Eliminar la garantia sin pagos la quita", p2.buscarCuota("D1", 0) == null);
+        for (int n = 2; n <= 3; n++) p2.eliminarCuota("D1", n);
+        verificar("Solo queda la cuota pagada y deja de ser moroso", p2.cuotasDe("D1").getTamano() == 1);
+        inmobiliaria.ui.Activacion.sincronizarEstados(ars, k2, m2);
+        verificar("Sin mora y con contrato vigente vuelve a ACTIVO",
+                ars.buscar("DNI9").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.ACTIVO);
+        k2.finalizar("D1", 0, 0, 0, 0);
+        inmobiliaria.ui.Activacion.sincronizarEstados(ars, k2, m2);
+        verificar("Con todos sus contratos finalizados queda INACTIVO",
+                ars.buscar("DNI9").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.INACTIVO);
+
         System.out.println(fallos == 0 ? "\nTodas las pruebas pasaron." : "\nFallaron " + fallos + " pruebas.");
         if (fallos > 0) System.exit(1);
     }

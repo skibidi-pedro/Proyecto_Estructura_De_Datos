@@ -408,7 +408,7 @@ public class MenuPrincipal extends JFrame {
     private JComponent crearVistaModulo(String modulo) {
         return switch (modulo) {
             case "Unidades" -> new PanelUnidades(propiedades, propiedadActual);
-            case "Arrendatarios" -> new PanelArrendatarios(arrendatarios, contratos, expedientes, propiedades, pagos);
+            case "Arrendatarios" -> new PanelArrendatarios(arrendatarios, contratos, expedientes, propiedades, pagos, mora);
             case "Contratos" -> new PanelContratos(contratos, propiedades, pagos, mora,
                     arrendatarios, expedientes, propiedadActual);
             case "Cobro de rentas y mora" -> new PanelCobranza(contratos, pagos, mora, propiedades, propiedadActual);

@@ -1,5 +1,9 @@
 package inmobiliaria.ui;
 
+import inmobiliaria.cobranza.servicio.MoraService;
+import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
+import inmobiliaria.arrendatarios.modelo.EstadoArrendatario;
+import inmobiliaria.arrendatarios.modelo.Arrendatario;
 import java.awt.Component;
 import inmobiliaria.cobranza.modelo.Cuota;
 import inmobiliaria.cobranza.servicio.PagoService;
@@ -97,5 +101,28 @@ public class Activacion {
                     && c.getDocumentoArrendatario().equals(documentoArrendatario)) r.agregar(c);
         }
         return r;
+    }
+
+    // Asignacion automatica del estado de los arrendatarios segun sus contratos y su cobranza:
+    // MOROSO si tiene cuotas en mora; ACTIVO si tiene un contrato pendiente o vigente (o aun no tiene
+    // contratos); INACTIVO si todos sus contratos estan finalizados.
+    public static void sincronizarEstados(ArrendatarioService arrendatarios, ContratoService contratos,
+                                          MoraService mora) {
+        ListaSimple<Contrato> todos = contratos.listar();
+        ListaSimple<Arrendatario> lista = arrendatarios.listar();
+        for (int i = 0; i < lista.getTamano(); i++) {
+            Arrendatario a = lista.obtener(i);
+            String doc = a.getDocumentoIdentidad();
+            boolean tiene = false, abierto = false;
+            for (int j = 0; j < todos.getTamano(); j++) {
+                Contrato c = todos.obtener(j);
+                if (!c.getDocumentoArrendatario().equals(doc)) continue;
+                tiene = true;
+                if (c.getEstado() != EstadoContrato.FINALIZADO) abierto = true;
+            }
+            EstadoArrendatario nuevo = mora.esMoroso(doc, todos, java.time.LocalDate.now()) ? EstadoArrendatario.MOROSO
+                    : (!tiene || abierto) ? EstadoArrendatario.ACTIVO : EstadoArrendatario.INACTIVO;
+            if (a.getEstado() != nuevo) arrendatarios.cambiarEstado(doc, nuevo);
+        }
     }
 }

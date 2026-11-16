@@ -114,6 +114,19 @@ public class PagoService {
         return recibo;
     }
 
+    // ---------- Eliminar una cuota (o la garantia) que todavia no recibio ningun pago ----------
+    public void eliminarCuota(String numeroContrato, int numeroCuota) {
+        Cuota objetivo = buscarCuota(numeroContrato, numeroCuota);
+        if (objetivo == null) throw new IllegalArgumentException("No existe esa cuota");
+        if (objetivo.getSaldo() != objetivo.getMonto())
+            throw new IllegalArgumentException("No se puede eliminar: ya tiene pagos registrados.");
+        ListaSimple<Cuota> quedan = new ListaSimple<>();
+        for (int i = 0; i < cuotas.getTamano(); i++)
+            if (cuotas.obtener(i) != objetivo) quedan.agregar(cuotas.obtener(i));
+        cuotas = quedan;
+        historial.registrarOperacion("Cuota eliminada: contrato " + numeroContrato + " cuota " + numeroCuota);
+    }
+
     // ---------- Consultas ----------
     public Cuota buscarCuota(String numeroContrato, int numeroCuota) {
         for (int i = 0; i < cuotas.getTamano(); i++) {

@@ -95,7 +95,9 @@ public class PanelCobranza extends JPanel {
         verRecibos.addActionListener(e -> verRecibos());
         botones.add(pagar);
         botones.add(verRecibos);
-        botones.add(Dialogos.botonRefrescar(this::actualizar));
+        JButton eliminar = new JButton("Eliminar");
+        eliminar.addActionListener(e -> eliminarCuota());
+        botones.add(eliminar);
         add(botones, BorderLayout.SOUTH);
 
         sincronizarContratos();
@@ -206,6 +208,26 @@ public class PanelCobranza extends JPanel {
     }
 
     // ---------- Registrar pago total o parcial y emitir recibo (RN-09, RN-10) ----------
+    // Elimina la cuota (o la garantia) elegida, solo si no tiene pagos
+    private void eliminarCuota() {
+        Contrato c = (Contrato) comboContratos.getSelectedItem();
+        Object numero = Dialogos.seleccionado(tabla, 0);
+        if (c == null || numero == null) {
+            Dialogos.error(this, "Seleccione una cuota (o la garantia) de la tabla.");
+            return;
+        }
+        int n = numero instanceof Integer i ? i : Cuota.NUMERO_GARANTIA;
+        String que = n == Cuota.NUMERO_GARANTIA ? "la garantia" : "la cuota " + n;
+        if (!Dialogos.confirmar(this, "Eliminar", "Eliminar " + que + "?")) return;
+        try {
+            pagos.eliminarCuota(c.getNumero(), n);
+        } catch (IllegalArgumentException ex) {
+            Dialogos.error(this, ex.getMessage());
+            return;
+        }
+        refrescar();
+    }
+
     private void registrarPago() {
         Contrato c = (Contrato) comboContratos.getSelectedItem();
         Object numero = Dialogos.seleccionado(tabla, 0);
