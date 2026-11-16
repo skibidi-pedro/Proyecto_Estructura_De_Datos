@@ -70,6 +70,13 @@ public class PanelCobranza extends JPanel {
         add(norte, BorderLayout.NORTH);
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
+        // Fila entera: verde si esta pagada, amarilla si esta atrasada (en mora o vencida en gracia)
+        Dialogos.colorear(tabla, (fila, col) -> {
+            String e = String.valueOf(modelo.getValueAt(fila, 5));
+            if (e.equals("Pagada")) return Dialogos.VERDE;
+            if (e.equals("EN MORA") || e.startsWith("Vencida")) return Dialogos.AMARILLO;
+            return null;
+        });
         centro.add(new JScrollPane(tabla), BorderLayout.CENTER);
         resumen.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 6, 2, 6));
         centro.add(resumen, BorderLayout.SOUTH);

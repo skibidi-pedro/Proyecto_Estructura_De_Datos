@@ -17,7 +17,7 @@ import inmobiliaria.nucleo.util.Validador;
  * Los datos de otros modulos (unidad disponible, moroso, expediente completo)
  * se reciben como parametros, asi este servicio no depende de las clases de
  * los demas. Quien llame (menu o servicio de integracion) tambien se encarga
- * de cambiar el estado de la unidad (ALQUILADA al activar, DISPONIBLE al finalizar).
+ * de cambiar el estado de la unidad (ALQUILADA al activar, NO_ALQUILADA al finalizar).
  *
  * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
  * Reglas: RN-02, RN-03, RN-04, RN-05, RN-12, RN-13
@@ -46,7 +46,7 @@ public class ContratoService {
         if (arrendatarioMoroso)                                        // RN-11
             throw new IllegalArgumentException("El arrendatario es moroso, no puede firmar");
         if (!unidadDisponible)                                         // RN-02
-            throw new IllegalArgumentException("La unidad no esta disponible");
+            throw new IllegalArgumentException("La unidad ya esta alquilada");
         if (contratoVigenteDeUnidad(codigoUnidad) != null)             // RN-03
             throw new IllegalArgumentException("La unidad ya tiene un contrato vigente");
 
@@ -69,12 +69,19 @@ public class ContratoService {
     }
 
     // ---------- Activar (RN-06). Despues hay que generar las cuotas (RN-07) ----------
+    // Version estricta: exige el expediente completo (documento de identidad y documento del contrato).
     public Contrato activar(String numero, boolean expedienteCompleto) {
+        if (!expedienteCompleto && buscarObligatorio(numero).getEstado() == EstadoContrato.PENDIENTE)   // RN-06
+            throw new IllegalArgumentException("El expediente esta incompleto (documento de identidad y documento del contrato)");
+        return activar(numero);
+    }
+
+    // Activa sin revisar los documentos: la interfaz avisa de lo que falta, pide confirmacion y deja
+    // resaltado en amarillo al contrato (y a su documento) hasta que se anexen.
+    public Contrato activar(String numero) {
         Contrato c = buscarObligatorio(numero);
         if (c.getEstado() != EstadoContrato.PENDIENTE)
             throw new IllegalArgumentException("Solo se puede activar un contrato pendiente");
-        if (!expedienteCompleto)                                       // RN-06
-            throw new IllegalArgumentException("El expediente esta incompleto (documento de identidad y documento del contrato)");
         if (contratoVigenteDeUnidad(c.getCodigoUnidad()) != null)      // RN-03
             throw new IllegalArgumentException("La unidad ya tiene un contrato vigente");
 

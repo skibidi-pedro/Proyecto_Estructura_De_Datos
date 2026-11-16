@@ -125,13 +125,10 @@ public class ReporteService {
 
     // ---------- Ocupacion: unidades por estado ----------
     public String reporteOcupacion() {
-        int disponibles = 0, alquiladas = 0, mantenimiento = 0;
+        int alquiladas = 0;
         ListaSimple<Unidad> lista = propiedades.listarUnidades();
         for (int i = 0; i < lista.getTamano(); i++) {
-            EstadoUnidad e = lista.obtener(i).getEstado();
-            if (e == EstadoUnidad.DISPONIBLE) disponibles++;
-            else if (e == EstadoUnidad.ALQUILADA) alquiladas++;
-            else mantenimiento++;
+            if (lista.obtener(i).getEstado() == EstadoUnidad.ALQUILADA) alquiladas++;
         }
         int total = lista.getTamano();
         double porcentaje = total == 0 ? 0 : alquiladas * 100.0 / total;
@@ -139,8 +136,7 @@ public class ReporteService {
         return "REPORTE DE OCUPACION\n"
                 + "  Unidades: " + total + "\n"
                 + "  Alquiladas: " + alquiladas + "\n"
-                + "  Disponibles: " + disponibles + "\n"
-                + "  En mantenimiento: " + mantenimiento + "\n"
+                + "  No alquiladas: " + (total - alquiladas) + "\n"
                 + String.format(Locale.US, "OCUPACION: %.1f%%", porcentaje);
     }
 }

@@ -23,8 +23,8 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
 
 /**
  * Unidades (departamentos, casas, locales, cuartos) de la propiedad seleccionada.
- * Usa PropiedadService (Integrante 2). Las unidades nacen DISPONIBLE o EN_MANTENIMIENTO;
- * ALQUILADA solo la pone el modulo de contratos al activar uno.
+ * Usa PropiedadService (Integrante 2). Las unidades nacen NO ALQUILADAS; pasan a ALQUILADA cuando
+ * el modulo de contratos activa uno y vuelven a NO ALQUILADA al finalizarlo (no se cambia a mano).
  * El codigo se asigna solo (UNI-001, ...) y no se muestra: la columna esta oculta pero sigue en el modelo.
  * Es un panel que MenuPrincipal muestra a la derecha de la ventana; se refresca solo cada segundo.
  */
@@ -47,13 +47,10 @@ public class PanelUnidades extends JPanel {
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton nueva = new JButton("Nueva unidad");
         nueva.addActionListener(e -> nueva());
-        JButton estado = new JButton("Cambiar estado");
-        estado.addActionListener(e -> cambiarEstado());
         JButton baja = new JButton("Dar de baja");
         baja.addActionListener(e -> baja());
         botones.add(nueva);
         botones.add(Dialogos.botonRefrescar(this::refrescar));
-        botones.add(estado);
         botones.add(baja);
         add(botones, BorderLayout.SOUTH);
 
@@ -76,42 +73,17 @@ public class PanelUnidades extends JPanel {
         JTextField direccion = Dialogos.texto(edificio.getDireccion());
         JComboBox<TipoUnidad> tipo = new JComboBox<>(TipoUnidad.values());
         JTextField precio = Dialogos.texto("");
-        JComboBox<EstadoUnidad> estado = new JComboBox<>(
-                new EstadoUnidad[] { EstadoUnidad.DISPONIBLE, EstadoUnidad.EN_MANTENIMIENTO });
 
         if (!Dialogos.formulario(this, "Nueva unidad",
-                new String[] { "Direccion", "Tipo", "Precio mensual (S/)", "Estado inicial" },
-                new javax.swing.JComponent[] { direccion, tipo, precio, estado })) return;
+                new String[] { "Direccion", "Tipo", "Precio mensual (S/)" },
+                new javax.swing.JComponent[] { direccion, tipo, precio })) return;
         try {
             String codigo = GeneradorCodigo.siguiente("UNI",
                     Dialogos.codigos(propiedades.listarUnidades(), Unidad::getCodigo));
             propiedades.registrarUnidad(edificio.getCodigo(), codigo, direccion.getText(),
                     (TipoUnidad) tipo.getSelectedItem(), Dialogos.numero(precio, "Precio"),
-                    (EstadoUnidad) estado.getSelectedItem());
+                    EstadoUnidad.NO_ALQUILADA);
             GeneradorCodigo.marcarUsado(codigo);
-            refrescar();
-        } catch (IllegalArgumentException ex) {
-            Dialogos.error(this, ex.getMessage());
-        }
-    }
-
-    private void cambiarEstado() {
-        Object codigo = Dialogos.seleccionado(tabla, 0);
-        if (codigo == null) {
-            Dialogos.error(this, "Seleccione una unidad de la tabla.");
-            return;
-        }
-        Unidad u = propiedades.buscarUnidad(codigo.toString());
-        if (u.getEstado() == EstadoUnidad.ALQUILADA) {
-            Dialogos.error(this, "La unidad esta alquilada: vuelve a DISPONIBLE al finalizar su contrato.");
-            return;
-        }
-        Object nuevo = JOptionPane.showInputDialog(this, "Nuevo estado de " + u.getDireccion() + ":",
-                "Cambiar estado", JOptionPane.PLAIN_MESSAGE, null,
-                new EstadoUnidad[] { EstadoUnidad.DISPONIBLE, EstadoUnidad.EN_MANTENIMIENTO }, u.getEstado());
-        if (nuevo == null) return;
-        try {
-            propiedades.cambiarEstadoUnidad(u.getCodigo(), (EstadoUnidad) nuevo);
             refrescar();
         } catch (IllegalArgumentException ex) {
             Dialogos.error(this, ex.getMessage());

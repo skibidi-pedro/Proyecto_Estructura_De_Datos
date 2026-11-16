@@ -7,6 +7,8 @@ import inmobiliaria.arrendatarios.modelo.Arrendatario;
 import inmobiliaria.arrendatarios.modelo.EstadoArrendatario;
 import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
 import inmobiliaria.contratos.modelo.Contrato;
+import inmobiliaria.contratos.modelo.EstadoContrato;
+import inmobiliaria.propiedades.modelo.EstadoUnidad;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.documentos.modelo.EstadoDocumento;
 import inmobiliaria.documentos.modelo.TipoDocumento;
@@ -116,9 +118,25 @@ public class PruebaModulos {
         verificar("Sin ningun documento faltan los dos",
                 Activacion.faltantes(c2, expedientes).contains("identidad")
                 && Activacion.faltantes(c2, expedientes).contains("contrato"));
-        verificar("No se activa sin documentos (RN-06)", lanza(() -> contratos.activar("CON-002", false)));
+        verificar("La activacion estricta (con bandera) sigue exigiendo documentos",
+                lanza(() -> contratos.activar("CON-002", false)));
         contratos.activar("CON-001", Activacion.faltantes(c, expedientes).isEmpty());
         verificar("Con los dos documentos el contrato se activa", c.getEstado().toString().equals("VIGENTE"));
+
+        // Se puede activar sin documentos: queda VIGENTE y la interfaz lo resalta en amarillo
+        contratos.activar("CON-002");
+        verificar("Un contrato sin documentos se activa igual (sale en amarillo)",
+                c2.getEstado() == EstadoContrato.VIGENTE && !Activacion.faltantes(c2, expedientes).isEmpty());
+
+        // ---- Estados de unidad ----
+        verificar("Estados de unidad: NO ALQUILADA y ALQUILADA",
+                EstadoUnidad.values().length == 2
+                && EstadoUnidad.NO_ALQUILADA.toString().equals("NO ALQUILADA")
+                && EstadoUnidad.ALQUILADA.toString().equals("ALQUILADA"));
+        verificar("Un estado antiguo (DISPONIBLE, MANTENIMIENTO) se lee como NO ALQUILADA",
+                EstadoUnidad.desdeTexto("DISPONIBLE") == EstadoUnidad.NO_ALQUILADA
+                && EstadoUnidad.desdeTexto("EN_MANTENIMIENTO") == EstadoUnidad.NO_ALQUILADA
+                && EstadoUnidad.desdeTexto("ALQUILADA") == EstadoUnidad.ALQUILADA);
 
         // ---- Persistencia (escribe en ./data/) ----
         arrendatarios.guardar();

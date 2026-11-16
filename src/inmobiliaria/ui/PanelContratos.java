@@ -22,6 +22,7 @@ import inmobiliaria.cobranza.modelo.Cuota;
 import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.modelo.Contrato;
+import inmobiliaria.contratos.modelo.EstadoContrato;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.contratos.servicio.LiquidacionGarantia;
 import inmobiliaria.documentos.servicio.ExpedienteService;
@@ -41,14 +42,14 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  * hace el pegado que sus comentarios piden:
  *  - unidad disponible       -> PropiedadService (RN-02)
  *  - arrendatario moroso     -> MoraService (RN-11)
- *  - cambiar estado unidad   -> PropiedadService (ALQUILADA al activar, DISPONIBLE al finalizar)
+ *  - cambiar estado unidad   -> PropiedadService (ALQUILADA al activar, NO_ALQUILADA al finalizar)
  *  - cuotas al activar/renovar -> PagoService (RN-07)
  *  - deuda y mora al finalizar -> PagoService y MoraService (RN-13)
  *  - el numero de contrato se asigna solo (CON-001, ...) y no se muestra (columna oculta en la tabla)
  *  - es un panel que MenuPrincipal muestra a la derecha de la ventana, con refresco automatico cada segundo
  *  - arrendatario            -> se elige de ArrendatarioService (los inactivos no aparecen)
- *  - documentos completos (RN-06) -> identidad del arrendatario (ExpedienteService) y documento del
- *    contrato, antes de activar (ver Activacion)
+ *  - documentos (RN-06)      -> identidad del arrendatario (ExpedienteService) y documento del
+ *    contrato. Se puede activar sin ellos: pide confirmacion y queda resaltado en amarillo (ver Activacion)
  *  - el documento del contrato (PDF, Word o foto) se anexa al crear el contrato o despues con
  *    "Anexar documento"; la columna Archivo muestra su nombre (Contrato.pdf) y con doble clic se abre
  *  - cuando los documentos quedan completos se pregunta si activar el contrato (Si / No)
@@ -81,6 +82,7 @@ public class PanelContratos extends JPanel {
         Dialogos.ocultarColumna(tabla, 0);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
         Dialogos.alDobleClick(tabla, () -> ejecutar(this::abrirDocumento));
+        Dialogos.colorear(tabla, this::colorDe);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
         botones.add(boton("Nuevo contrato", () -> nuevo()));
@@ -133,6 +135,17 @@ public class PanelContratos extends JPanel {
         return u == null ? "(unidad dada de baja)" : u.getDireccion();
     }
 
+    // Archivo: verde con documento del contrato, amarillo si falta.
+    // Estado: un contrato VIGENTE al que le faltan documentos (del contrato o de identidad) va en amarillo.
+    private java.awt.Color colorDe(int fila, int columna) {
+        Contrato c = contratos.buscar(modelo.getValueAt(fila, 0).toString());
+        if (c == null) return null;
+        if (columna == 6) return c.getDocumento().isEmpty() ? Dialogos.AMARILLO : Dialogos.VERDE;
+        if (columna == 7 && c.getEstado() == EstadoContrato.VIGENTE
+                && !Activacion.faltantes(c, expedientes).isEmpty()) return Dialogos.AMARILLO;
+        return null;
+    }
+
     private void refrescar() {
         List<Object[]> filas = new ArrayList<>();
         ListaSimple<Contrato> lista = contratos.listar();
@@ -142,7 +155,7 @@ public class PanelContratos extends JPanel {
             filas.add(new Object[] { c.getNumero(), direccionDe(c.getCodigoUnidad()), c.getDocumentoArrendatario(),
                     Fechas.convertirAString(c.getFechaInicio()), Fechas.convertirAString(c.getFechaFin()),
                     Dialogos.dinero(c.getRentaMensual()),
-                    c.getDocumento().isEmpty() ? "-" : Archivos.nombre(c.getDocumento()), c.getEstado() });
+                    c.getDocumento().isEmpty() ? "Falta" : Archivos.nombre(c.getDocumento()), c.getEstado() });
         }
         Dialogos.poblar(tabla, modelo, filas);
     }
@@ -158,11 +171,11 @@ public class PanelContratos extends JPanel {
         ListaSimple<Unidad> todas = propiedades.unidadesDe(edificio.getCodigo());
         JComboBox<Unidad> unidades = new JComboBox<>();
         for (int i = 0; i < todas.getTamano(); i++) {
-            if (todas.obtener(i).getEstado() == EstadoUnidad.DISPONIBLE) unidades.addItem(todas.obtener(i));
+            if (todas.obtener(i).getEstado() == EstadoUnidad.NO_ALQUILADA) unidades.addItem(todas.obtener(i));
         }
         if (unidades.getItemCount() == 0)
             throw new IllegalArgumentException(
-                    "No hay unidades disponibles en esta propiedad. Registrelas en el modulo Unidades.");
+                    "No hay unidades sin alquilar en esta propiedad. Registrelas en el modulo Unidades.");
 
         Dialogos.mostrarComo(unidades, u -> u.getDireccion() + " | " + u.getTipo() + " | S/ " + Dialogos.dinero(u.getPrecio()));
 
@@ -267,9 +280,14 @@ public class PanelContratos extends JPanel {
     }
 
     private void activarContrato(Contrato c) {
-        ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos, expedientes);
+        String falta = Activacion.faltantes(c, expedientes);
+        if (!falta.isEmpty() && !Dialogos.confirmar(this, "Faltan documentos",
+                "Falta " + falta + ".\nActivar el contrato de todos modos? "
+                + "Quedara resaltado en amarillo hasta que se anexen.")) return;
+        ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos);
         refrescar();
-        Dialogos.info(this, "Contrato", "Contrato de " + c.getDocumentoArrendatario() + " activado.\n"
+        Dialogos.info(this, "Contrato", "Contrato de " + nombreDe(c.getDocumentoArrendatario()) + " activado"
+                + (falta.isEmpty() ? "." : " SIN todos sus documentos (falta " + falta + ").") + "\n"
                 + Activacion.resumen(c, cuotas));
     }
 
@@ -306,7 +324,7 @@ public class PanelContratos extends JPanel {
 
         LiquidacionGarantia liq = contratos.finalizar(c.getNumero(), deuda, recargo,
                 Dialogos.numero(danos, "Danos"), garantiaPagada);
-        propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.DISPONIBLE);
+        propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.NO_ALQUILADA);
         refrescar();
         Dialogos.info(this, "Liquidacion de garantia", liq.toString());
     }

@@ -47,7 +47,7 @@ public class Unidad implements Persistible {
 
     @Override
     public String aLineaCSV() {
-        return codigo + ";" + codigoEdificio + ";" + direccion + ";" + tipo + ";" + precio + ";" + estado;
+        return codigo + ";" + codigoEdificio + ";" + direccion + ";" + tipo + ";" + precio + ";" + estado.name();
     }
 
     @Override
@@ -58,7 +58,7 @@ public class Unidad implements Persistible {
         direccion = p[2];
         tipo = TipoUnidad.valueOf(p[3]);
         precio = Double.parseDouble(p[4]);
-        estado = EstadoUnidad.valueOf(p[5]);
+        estado = EstadoUnidad.desdeTexto(p[5]);
     }
 
     @Override

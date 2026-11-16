@@ -66,6 +66,7 @@ public class PanelArrendatarios extends JPanel {
         add(norte, BorderLayout.NORTH);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
         Dialogos.alDobleClick(tabla, () -> ejecutar(this::abrirDocumento));
+        Dialogos.colorear(tabla, this::colorDe);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
         botones.add(boton("Nuevo", this::nuevo));
@@ -124,9 +125,25 @@ public class PanelArrendatarios extends JPanel {
         }
     }
 
+    // Archivo: verde si el documento de identidad esta recibido, amarillo si falta.
+    // Estado: ACTIVO verde, MOROSO amarillo, INACTIVO rojo.
+    private java.awt.Color colorDe(int fila, int columna) {
+        if (columna == 4)
+            return expedientes.expedienteCompleto(modelo.getValueAt(fila, 0).toString())
+                    ? Dialogos.VERDE : Dialogos.AMARILLO;
+        if (columna == 5) {
+            switch ((EstadoArrendatario) modelo.getValueAt(fila, 5)) {
+                case ACTIVO: return Dialogos.VERDE;
+                case MOROSO: return Dialogos.AMARILLO;
+                default: return Dialogos.ROJO;
+            }
+        }
+        return null;
+    }
+
     private String nombreArchivo(Arrendatario a) {
         String ruta = expedientes.rutaIdentidad(a.getDocumentoIdentidad());
-        return ruta.isEmpty() ? "-" : Archivos.nombre(ruta);
+        return ruta.isEmpty() ? "Falta" : Archivos.nombre(ruta);
     }
 
     private void ejecutar(Runnable accion) {

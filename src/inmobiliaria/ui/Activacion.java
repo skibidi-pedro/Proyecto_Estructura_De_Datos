@@ -16,8 +16,10 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  * Activacion de un contrato (la comparten PanelContratos y PanelArrendatarios).
  *
  * ContratoService no conoce a los demas modulos, asi que aqui se hace el pegado:
- *  - documentos completos (RN-06) -> documento de identidad del arrendatario (ExpedienteService)
- *                                    y documento del contrato (Contrato.getDocumento)
+ *  - documentos (RN-06)           -> documento de identidad del arrendatario (ExpedienteService)
+ *                                    y documento del contrato (Contrato.getDocumento). Ya no son
+ *                                    obligatorios: se puede activar sin ellos, avisando, y la
+ *                                    interfaz los resalta en amarillo mientras falten.
  *  - unidad pasa a ALQUILADA      -> PropiedadService
  *  - cuotas mensuales y garantia  -> PagoService (RN-07)
  */
@@ -36,13 +38,10 @@ public class Activacion {
     }
 
     // Activa el contrato y devuelve las cuotas generadas. Lanza IllegalArgumentException si no se puede.
+    // No exige documentos: quien llama ya pregunto al usuario si faltaban (ver PanelContratos).
     public static ListaSimple<Cuota> activar(Contrato c, ContratoService contratos,
-                                             PropiedadService propiedades, PagoService pagos,
-                                             ExpedienteService expedientes) {
-        String falta = faltantes(c, expedientes);
-        if (!falta.isEmpty())
-            throw new IllegalArgumentException("No se puede activar el contrato: falta " + falta + ".");
-        contratos.activar(c.getNumero(), true);
+                                             PropiedadService propiedades, PagoService pagos) {
+        contratos.activar(c.getNumero());
         propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.ALQUILADA);
         return pagos.generarCuotas(c);
     }
@@ -62,7 +61,7 @@ public class Activacion {
                     "Los documentos de " + nombreArrendatario + " estan registrados.\n"
                     + "Activar su contrato de " + donde + "?")) continue;
             try {
-                ListaSimple<Cuota> cuotas = activar(c, contratos, propiedades, pagos, expedientes);
+                ListaSimple<Cuota> cuotas = activar(c, contratos, propiedades, pagos);
                 Dialogos.info(padre, "Contrato", "Contrato activado.\n" + resumen(c, cuotas));
             } catch (IllegalArgumentException ex) {
                 Dialogos.error(padre, ex.getMessage());

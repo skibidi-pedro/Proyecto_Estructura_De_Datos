@@ -48,7 +48,7 @@ public class PruebaCobranza {
         propiedades.registrarPropietario("P1", "Propietario Uno");
         propiedades.registrarEdificio("P1", "E1", "Edificio Uno", "Av. Lima 100");
         propiedades.registrarUnidad("E1", "U1", "Av. Lima 100 - 101", TipoUnidad.values()[0], 1000, EstadoUnidad.ALQUILADA);
-        propiedades.registrarUnidad("E1", "U2", "Av. Lima 100 - 102", TipoUnidad.values()[0], 900, EstadoUnidad.DISPONIBLE);
+        propiedades.registrarUnidad("E1", "U2", "Av. Lima 100 - 102", TipoUnidad.values()[0], 900, EstadoUnidad.NO_ALQUILADA);
 
         Contrato c = contratos.crear("C1", "DNI1", "U1", LocalDate.of(2026, 1, 10),
                 LocalDate.of(2026, 6, 30), 1000, 10, 1000, "sin clausulas", true, false);

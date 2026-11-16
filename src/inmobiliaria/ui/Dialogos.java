@@ -1,6 +1,7 @@
 package inmobiliaria.ui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -9,6 +10,7 @@ import java.awt.event.HierarchyEvent;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.BiFunction;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -29,6 +31,7 @@ import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import inmobiliaria.nucleo.util.Archivos;
 import inmobiliaria.nucleo.util.Fechas;
@@ -108,6 +111,27 @@ public class Dialogos {
         return new DefaultTableModel(columnas, 0) {
             @Override public boolean isCellEditable(int fila, int columna) { return false; }
         };
+    }
+
+    // Colores de resaltado (tonos claros): verde = bien / pagado, amarillo = falta o atrasado, rojo = inactivo
+    public static final Color VERDE = new Color(198, 239, 206);
+    public static final Color AMARILLO = new Color(255, 235, 132);
+    public static final Color ROJO = new Color(255, 199, 206);
+
+    // Pinta celdas de la tabla. El criterio recibe (fila del MODELO, columna del MODELO) y devuelve
+    // el color, o null para dejar la celda como esta. La fila seleccionada conserva su color de seleccion.
+    public static void colorear(JTable tabla, BiFunction<Integer, Integer, Color> criterio) {
+        tabla.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object valor, boolean seleccionada,
+                                                           boolean foco, int fila, int columna) {
+                Component c = super.getTableCellRendererComponent(t, valor, seleccionada, foco, fila, columna);
+                Color color = seleccionada ? null
+                        : criterio.apply(t.convertRowIndexToModel(fila), t.convertColumnIndexToModel(columna));
+                c.setBackground(color != null ? color : seleccionada ? t.getSelectionBackground() : t.getBackground());
+                return c;
+            }
+        });
     }
 
     public static JTable tabla(DefaultTableModel modelo) {

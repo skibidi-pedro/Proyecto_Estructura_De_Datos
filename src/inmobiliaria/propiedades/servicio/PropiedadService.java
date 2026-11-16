@@ -166,7 +166,7 @@ public class PropiedadService {
         historial.registrarOperacion("Unidad modificada: " + codigo);
     }
 
-    // Lo usa el modulo de contratos: ALQUILADA al activar, DISPONIBLE al finalizar
+    // Lo usa el modulo de contratos: ALQUILADA al activar, NO_ALQUILADA al finalizar
     public void cambiarEstadoUnidad(String codigo, EstadoUnidad nuevoEstado) {
         if (nuevoEstado == null)
             throw new IllegalArgumentException("Falta el estado");
@@ -187,10 +187,10 @@ public class PropiedadService {
         return unidades.buscar(codigo);
     }
 
-    // RN-02: solo las disponibles pueden recibir un contrato nuevo
+    // RN-02: solo las unidades NO ALQUILADAS pueden recibir un contrato nuevo
     public boolean unidadDisponible(String codigo) {
         Unidad u = unidades.buscar(codigo);
-        return u != null && u.getEstado() == EstadoUnidad.DISPONIBLE;
+        return u != null && u.getEstado() == EstadoUnidad.NO_ALQUILADA;
     }
 
     public ListaSimple<Unidad> listarUnidades() {
