@@ -82,7 +82,6 @@ public class MenuPrincipal extends JFrame {
 
     private final DefaultComboBoxModel<Edificio> modeloPropiedades = new DefaultComboBoxModel<>();
     private final JComboBox<Edificio> comboPropiedades = new JComboBox<>(modeloPropiedades);
-    private final JLabel lblPropiedad = new JLabel("Ninguna propiedad seleccionada");
     private Propietario propietarioActual = null;
     private Edificio propiedadActual = null;
 
@@ -276,10 +275,6 @@ public class MenuPrincipal extends JFrame {
         elegir.addActionListener(e -> elegirPropiedad());
         p.add(elegir, c);
 
-        c.gridx = 0; c.gridy = 2; c.gridwidth = 3;
-        lblPropiedad.setFont(lblPropiedad.getFont().deriveFont(Font.ITALIC, 11f));
-        p.add(lblPropiedad, c);
-
         // Que el panel no se estire: queda chico en la esquina
         p.setMaximumSize(p.getPreferredSize());
         return p;
@@ -332,8 +327,6 @@ public class MenuPrincipal extends JFrame {
             olvidarVistasDePropiedad();
         }
         propiedadActual = elegida;
-        lblPropiedad.setText(elegida != null ? "Elegida: " + elegida.getNombre()
-                                             : "Ninguna propiedad seleccionada");
         for (JToggleButton b : botonesModulos) {
             b.setEnabled(elegida != null);
         }

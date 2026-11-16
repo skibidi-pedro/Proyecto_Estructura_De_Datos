@@ -51,6 +51,6 @@ public class Edificio implements Persistible {
 
     @Override
     public String toString() {
-        return codigo + " - " + nombre + " (" + direccion + ")";
+        return codigo + " - " + nombre;
     }
 }
