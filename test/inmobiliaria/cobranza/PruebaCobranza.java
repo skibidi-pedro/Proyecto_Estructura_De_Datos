@@ -190,8 +190,8 @@ public class PruebaCobranza {
         inmobiliaria.ui.Activacion.sincronizarEstados(ars, k2, m2);
         verificar("Con cuotas vencidas el arrendatario pasa a MOROSO solo",
                 ars.buscar("DNI9").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.MOROSO);
-        verificar("Sin contratos queda ACTIVO",
-                ars.buscar("DNI8").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.ACTIVO);
+        verificar("Sin contratos queda INACTIVO",
+                ars.buscar("DNI8").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.INACTIVO);
         p2.registrarPago("D1", 1, 800, LocalDate.now());
         verificar("No se elimina una cuota con pagos", lanza(() -> p2.eliminarCuota("D1", 1)));
         p2.eliminarCuota("D1", 0);

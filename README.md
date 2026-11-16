@@ -69,8 +69,8 @@ de la ventana. El menu Reportes muestra Ingresos, Morosidad, Ocupacion y Alertas
   "Los documentos estan registrados. Activar el contrato? Si / No". Tambien se puede activar
   a mano con el boton Activar. Tambien se puede activar SIN documentos: el sistema no
   advierte y el contrato queda resaltado en amarillo hasta que se anexen.
-- **Estado del arrendatario (automatico):** MOROSO si tiene cuotas en mora, ACTIVO si tiene un contrato pendiente o vigente
-  (o aun no tiene contratos), INACTIVO si todos sus contratos estan finalizados. Ya no se cambia a mano.
+- **Estado del arrendatario (automatico):** MOROSO si tiene cuotas en mora, ACTIVO si tiene un contrato pendiente o vigente,
+  INACTIVO si no tiene contratos o todos estan finalizados. Ya no se cambia a mano.
 - **Cobro de rentas y mora:** el boton Eliminar quita la cuota (o la garantia) elegida si no tiene pagos.
 - **Estados de unidad:** `NO ALQUILADA` y `ALQUILADA` (cambian solos al activar o finalizar un contrato).
 - **Colores en las tablas:**

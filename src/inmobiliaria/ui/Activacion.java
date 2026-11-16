@@ -104,8 +104,8 @@ public class Activacion {
     }
 
     // Asignacion automatica del estado de los arrendatarios segun sus contratos y su cobranza:
-    // MOROSO si tiene cuotas en mora; ACTIVO si tiene un contrato pendiente o vigente (o aun no tiene
-    // contratos); INACTIVO si todos sus contratos estan finalizados.
+    // MOROSO si tiene cuotas en mora; ACTIVO si tiene un contrato pendiente o vigente;
+    // INACTIVO si no tiene contratos o todos estan finalizados.
     public static void sincronizarEstados(ArrendatarioService arrendatarios, ContratoService contratos,
                                           MoraService mora) {
         ListaSimple<Contrato> todos = contratos.listar();
@@ -121,7 +121,7 @@ public class Activacion {
                 if (c.getEstado() != EstadoContrato.FINALIZADO) abierto = true;
             }
             EstadoArrendatario nuevo = mora.esMoroso(doc, todos, java.time.LocalDate.now()) ? EstadoArrendatario.MOROSO
-                    : (!tiene || abierto) ? EstadoArrendatario.ACTIVO : EstadoArrendatario.INACTIVO;
+                    : (tiene && abierto) ? EstadoArrendatario.ACTIVO : EstadoArrendatario.INACTIVO;
             if (a.getEstado() != nuevo) arrendatarios.cambiarEstado(doc, nuevo);
         }
     }
