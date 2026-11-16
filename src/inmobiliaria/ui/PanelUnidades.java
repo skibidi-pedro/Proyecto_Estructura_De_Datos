@@ -53,7 +53,6 @@ public class PanelUnidades extends JPanel {
         JButton baja = new JButton("Dar de baja");
         baja.addActionListener(e -> baja());
         botones.add(nueva);
-        botones.add(Dialogos.botonRefrescar(this::refrescar));
         botones.add(baja);
         add(botones, BorderLayout.SOUTH);
 

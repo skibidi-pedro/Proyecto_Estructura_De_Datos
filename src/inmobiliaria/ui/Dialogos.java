@@ -275,13 +275,7 @@ public class Dialogos {
         });
     }
 
-    // ---------- Refresco ----------
-    public static JButton botonRefrescar(Runnable accion) {
-        JButton b = new JButton("Refrescar");
-        b.addActionListener(e -> accion.run());
-        return b;
-    }
-
+    // ---------- Refresco automatico ----------
     // Llama a accion cada segundo mientras el panel este visible; se detiene cuando el panel
     // se oculta (al cerrar el modulo o cambiar a otro).
     // Como poblar() no toca la tabla si nada cambio, el costo es leer los datos una vez por segundo.

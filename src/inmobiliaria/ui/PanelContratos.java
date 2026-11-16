@@ -255,8 +255,8 @@ public class PanelContratos extends JPanel {
             Activacion.ofrecer(this, c.getDocumentoArrendatario(), nombreDe(c.getDocumentoArrendatario()),
                     contratos, propiedades, pagos, expedientes);
         } else {
-            Dialogos.info(this, "Contrato", "Contrato creado para " + nombreDe(c.getDocumentoArrendatario())
-                    + ". Esta pendiente de activar.\nPara activarlo falta " + falta + ".");
+            Dialogos.info(this, "Contrato",
+                    "Se necesita documento con la identidad y contrato firmado para su activacion automatica");
         }
     }
 

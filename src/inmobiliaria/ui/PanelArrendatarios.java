@@ -75,7 +75,6 @@ public class PanelArrendatarios extends JPanel {
         botones.add(boton("Nuevo", this::nuevo));
         botones.add(boton("Editar", this::editar));
         botones.add(boton("Eliminar", this::eliminar));
-        botones.add(Dialogos.botonRefrescar(this::refrescar));
         add(botones, BorderLayout.SOUTH);
 
         refrescar();
