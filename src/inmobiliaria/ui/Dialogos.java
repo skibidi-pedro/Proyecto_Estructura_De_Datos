@@ -119,9 +119,9 @@ public class Dialogos {
     public static final Color ROJO = new Color(255, 199, 206);
     public static final Color NARANJA = new Color(255, 204, 153);
 
-    // Gradiente de rojos segun los dias de atraso: rosado claro al empezar la mora, rojo fuerte a los 90 dias o mas
+    // Gradiente de rojos segun los dias de atraso: rosado claro al empezar la mora, rojo fuerte a los 45 dias o mas
     public static Color rojoPorDias(int dias) {
-        double t = Math.max(0, Math.min(1, dias / 90.0));
+        double t = Math.max(0, Math.min(1, dias / 45.0));
         return new Color(255, (int) Math.round(205 - 135 * t), (int) Math.round(205 - 135 * t));
     }
 

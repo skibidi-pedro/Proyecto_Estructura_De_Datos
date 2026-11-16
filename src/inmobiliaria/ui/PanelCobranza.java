@@ -71,7 +71,7 @@ public class PanelCobranza extends JPanel {
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
         // Fila: verde si esta pagada, amarilla si esta atrasada. En mora, el estado va en rojo y los dias
-        // de atraso en un gradiente de rojos (mas oscuro cuanto mas dias).
+        // de atraso en un gradiente de rojos (rojo fuerte desde los 45 dias).
         Dialogos.colorear(tabla, (fila, col) -> {
             String e = String.valueOf(modelo.getValueAt(fila, 5));
             if (e.equals("Pagada")) return Dialogos.VERDE;
