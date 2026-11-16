@@ -19,7 +19,7 @@ import inmobiliaria.nucleo.util.Fechas;
  *    que se pasa como "mora" a ContratoService.finalizar.
  *  - Un arrendatario es moroso si algun contrato suyo tiene una cuota en mora (RN-11).
  *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
+ * Responsable: Integrante 3 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-08, RN-11
  */
 public class MoraService {

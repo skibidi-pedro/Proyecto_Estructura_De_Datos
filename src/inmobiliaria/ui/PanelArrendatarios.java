@@ -30,7 +30,7 @@ import inmobiliaria.nucleo.util.Archivos;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 
 /**
- * Arrendatarios. Usa ArrendatarioService (Integrante 3).
+ * Arrendatarios. Usa ArrendatarioService (Integrante 1).
  * El documento de identidad es la clave (RN-01) y se muestra: lo escribe el usuario.
  * Es un panel que MenuPrincipal muestra a la derecha de la ventana; se refresca solo cada segundo.
  * Un arrendatario con contratos no se puede eliminar .

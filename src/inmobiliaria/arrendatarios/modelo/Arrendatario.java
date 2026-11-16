@@ -5,7 +5,7 @@ import inmobiliaria.nucleo.persistencia.Persistible;
 /**
  * Entidad arrendatario. Se guarda en data/arrendatarios.csv.
  *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
+ * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  * Reglas: RN-01
  */
 public class Arrendatario implements Persistible {

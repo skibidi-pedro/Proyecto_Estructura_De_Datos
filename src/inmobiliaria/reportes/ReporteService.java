@@ -20,7 +20,7 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  * Cada reporte devuelve el texto listo para mostrar. Los totales numericos
  * tambien estan disponibles por separado.
  *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
+ * Responsable: Integrante 3 - Pucho Lizana Pedro Eduardo Mar
  */
 public class ReporteService {
     private ContratoService contratos;

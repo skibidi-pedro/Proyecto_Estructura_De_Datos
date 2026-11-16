@@ -6,7 +6,7 @@ import inmobiliaria.nucleo.estructuras.ListaSimple;
 /**
  * Tabla hash con encadenamiento; la clave es el documento de identidad.
  *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
+ * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
 public class TablaHash {
     // Clase interna para el encadenamiento

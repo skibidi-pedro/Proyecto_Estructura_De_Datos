@@ -22,7 +22,7 @@ import inmobiliaria.nucleo.util.Validador;
  * El servicio no valida que el arrendatario exista: quien lo llama (el panel) ya lo eligio
  * de la lista de arrendatarios.
  *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
+ * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
  * Reglas: RN-06
  */
 public class ExpedienteService {

@@ -18,7 +18,7 @@ import inmobiliaria.nucleo.persistencia.Persistible;
  * parametro (igual que ContratoService recibe datos de otros modulos), asi
  * no depende de ContratoService.
  *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
+ * Responsable: Integrante 3 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-07, RN-09, RN-10
  */
 public class PagoService {

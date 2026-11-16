@@ -7,7 +7,7 @@ import inmobiliaria.nucleo.util.Fechas;
 /**
  * Pago total o parcial.
  *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
+ * Responsable: Integrante 3 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-09
  */
 public class Pago implements Persistible {

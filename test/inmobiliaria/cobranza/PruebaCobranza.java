@@ -17,7 +17,7 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
 import inmobiliaria.reportes.ReporteService;
 
 /**
- * Pruebas del integrante 4 (cobranza, alertas, reportes) sin JUnit.
+ * Pruebas del integrante 3 (cobranza, alertas, reportes) sin JUnit.
  *
  * Ejecutar desde una carpeta vacia, porque la prueba de persistencia
  * escribe en ./data/ :

@@ -11,7 +11,7 @@ import inmobiliaria.nucleo.util.Fechas;
  * Esos campos solo se llenan en el constructor o al cargar desde el CSV.
  * Lo unico que se puede anexar despues es el comprobante de pago (foto o PDF).
  *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
+ * Responsable: Integrante 3 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-10
  */
 public class Recibo implements Persistible {

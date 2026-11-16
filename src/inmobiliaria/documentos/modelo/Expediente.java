@@ -5,7 +5,7 @@ import inmobiliaria.nucleo.estructuras.ListaSimple;
 /**
  * Expediente de un arrendatario: su documento de identidad (archivo anexado).
  *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
+ * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
  * Reglas: RN-06
  */
 public class Expediente {

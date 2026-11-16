@@ -13,7 +13,7 @@ import inmobiliaria.nucleo.estructuras.ListaSimple;
  * por el monto de la renta mensual, mientras el vencimiento no pase de la
  * fecha fin del contrato.
  *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
+ * Responsable: Integrante 3 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-07
  */
 public class GeneradorCuotas {

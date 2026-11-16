@@ -35,7 +35,7 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  * Cobro de rentas y mora (2.5) de la propiedad seleccionada: cuotas de un contrato (la primera fila,
  * "Garantia", es la cuota 0: el deposito que se cobra al empezar el contrato),
  * pagos totales o parciales, recibos, dias de atraso, recargo y si el arrendatario es moroso.
- * Usa PagoService y MoraService (Integrante 4).
+ * Usa PagoService y MoraService (Integrante 3).
  * Es un panel que MenuPrincipal muestra a la derecha de la ventana, con refresco automatico cada segundo;
  * no se muestran codigos.
  */

@@ -11,7 +11,7 @@ import inmobiliaria.nucleo.util.Fechas;
  * y se cobra igual que una cuota (pago total o parcial, con recibo). No es renta: no cuenta en la deuda
  * de renta, no genera recargo por mora y no es un ingreso.
  *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
+ * Responsable: Integrante 3 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-07, RN-09
  */
 public class Cuota implements Persistible {

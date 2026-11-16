@@ -5,7 +5,7 @@ import inmobiliaria.nucleo.persistencia.Persistible;
 /**
  * Documento del expediente de un arrendatario. Se guarda en data/documentos.csv.
  *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
+ * Responsable: Integrante 2 - Zavaleta Calderon Steven Jack
  */
 public class Documento implements Persistible {
     private String documentoArrendatario;

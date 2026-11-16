@@ -15,7 +15,7 @@ import inmobiliaria.nucleo.util.Fechas;
  *
  * Cada alerta es una linea de texto lista para mostrar en el menu.
  *
- * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
+ * Responsable: Integrante 3 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-12
  */
 public class AlertaService {

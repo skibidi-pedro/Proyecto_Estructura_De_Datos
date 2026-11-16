@@ -10,11 +10,11 @@ src/inmobiliaria/
 ├── nucleo/        (estructuras, historial, persistencia, util)   → Integrante 1
 ├── propiedades/   (estructuras AVL/General, modelo, servicio)    → Integrante 2
 ├── contratos/     (modelo, servicio)                             → Integrante 2
-├── arrendatarios/ (estructuras TablaHash, modelo, servicio)      → Integrante 3
-├── documentos/    (modelo, servicio)                             → Integrante 3
-├── cobranza/      (modelo, servicio)                             → Integrante 4
-├── alertas/                                                      → Integrante 4
-└── reportes/                                                     → Integrante 4
+├── arrendatarios/ (estructuras TablaHash, modelo, servicio)      → Integrante 1
+├── documentos/    (modelo, servicio)                             → Integrante 2
+├── cobranza/      (modelo, servicio)                             → Integrante 3
+├── alertas/                                                      → Integrante 3
+└── reportes/                                                     → Integrante 3
 test/inmobiliaria/   → pruebas, misma división por módulo
 data/                → archivos CSV (persistencia, sección 2.8)
 docs/                → documentación y plan de pruebas
@@ -24,17 +24,15 @@ docs/                → documentación y plan de pruebas
 
 | # | Integrante | Paquetes | Secciones | Reglas |
 |---|------------|----------|-----------|--------|
-| 1 | Francia Ramos Johan Mitziu (líder técnico) | `Main`, `nucleo.*` | 2.7, 2.8 | RN-01 |
-| 2 | Zavaleta Calderon Steven Jack | `propiedades.*`, `contratos.*` | 2.1, 2.3 | RN-02, 03, 04, 05, 12, 13 |
-| 3 | Quispe Rodriguez Carlos Manuel Ignacio | `arrendatarios.*`, `documentos.*` | 2.2, 2.4 | RN-06 |
-| 4 | Pucho Lizana Pedro Eduardo Mar | `cobranza.*`, `alertas`, `reportes` | 2.5 + alertas y reportes | RN-07, 08, 09, 10, 11 |
+| 1 | Francia Ramos Johan Mitziu (líder técnico) | `Main`, `nucleo.*`, `arrendatarios.*` | 2.7, 2.8, 2.2 | RN-01 |
+| 2 | Zavaleta Calderon Steven Jack | `propiedades.*`, `contratos.*`, `documentos.*` | 2.1, 2.3, 2.4 | RN-02, 03, 04, 05, 06, 12, 13 |
+| 3 | Pucho Lizana Pedro Eduardo Mar | `cobranza.*`, `alertas`, `reportes` | 2.5 + alertas y reportes | RN-07, 08, 09, 10, 11 |
 
 ## Estructuras de datos por módulo
 
-- **Integrante 1:** lista simple, lista doble, pila, cola, cola de prioridad (heap).
+- **Integrante 1:** lista simple, lista doble, pila, cola, cola de prioridad (heap), tabla hash con encadenamiento (arrendatarios).
 - **Integrante 2:** árbol AVL genérico, árbol general (Propietario > Edificio > Unidad).
-- **Integrante 3:** tabla hash con encadenamiento; usa la cola de prioridad del núcleo.
-- **Integrante 4:** usa las estructuras del núcleo (cola de prioridad para cobros urgentes).
+- **Integrante 3:** usa las estructuras del núcleo (cola de prioridad para cobros urgentes).
 
 ## Compilar
 

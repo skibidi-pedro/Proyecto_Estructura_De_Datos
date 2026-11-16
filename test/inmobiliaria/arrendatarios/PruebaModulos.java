@@ -18,7 +18,7 @@ import inmobiliaria.nucleo.util.Archivos;
 import inmobiliaria.ui.Activacion;
 
 /**
- * Pruebas del integrante 3 (arrendatarios y documentos) sin JUnit.
+ * Pruebas de arrendatarios y documentos sin JUnit.
  * Incluye el documento anexado al contrato.
  *
  * Ejecutar desde una carpeta vacia, porque las pruebas de archivos y de persistencia

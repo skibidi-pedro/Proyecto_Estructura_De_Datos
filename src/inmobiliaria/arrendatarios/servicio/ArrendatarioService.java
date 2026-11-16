@@ -13,7 +13,7 @@ import inmobiliaria.nucleo.util.Validador;
  * CRUD de arrendatarios; busqueda por documento de identidad (2.2).
  * Los arrendatarios viven en una tabla hash cuya clave es el documento (RN-01: no se repite).
  *
- * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
+ * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  * Reglas: RN-01
  */
 public class ArrendatarioService {
