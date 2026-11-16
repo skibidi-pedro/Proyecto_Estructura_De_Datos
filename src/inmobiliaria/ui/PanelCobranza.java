@@ -70,11 +70,17 @@ public class PanelCobranza extends JPanel {
         add(norte, BorderLayout.NORTH);
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
-        // Fila entera: verde si esta pagada, amarilla si esta atrasada (en mora o vencida en gracia)
+        // Fila: verde si esta pagada, amarilla si esta atrasada. En mora, el estado va en rojo y los dias
+        // de atraso en un gradiente de rojos (mas oscuro cuanto mas dias).
         Dialogos.colorear(tabla, (fila, col) -> {
             String e = String.valueOf(modelo.getValueAt(fila, 5));
             if (e.equals("Pagada")) return Dialogos.VERDE;
-            if (e.equals("EN MORA") || e.startsWith("Vencida")) return Dialogos.AMARILLO;
+            if (e.equals("EN MORA")) {
+                if (col == 5) return Dialogos.ROJO;
+                if (col == 4) return Dialogos.rojoPorDias(((Number) modelo.getValueAt(fila, 4)).intValue());
+                return Dialogos.AMARILLO;
+            }
+            if (e.startsWith("Vencida")) return Dialogos.AMARILLO;
             return null;
         });
         centro.add(new JScrollPane(tabla), BorderLayout.CENTER);

@@ -67,13 +67,15 @@ de la ventana. El menu Reportes muestra Ingresos, Morosidad, Ocupacion y Alertas
 - **Activacion (RN-06):** un contrato se activa cuando tiene el documento de identidad del
   arrendatario y el documento del contrato. Al completarse el segundo, el sistema pregunta
   "Los documentos estan registrados. Activar el contrato? Si / No". Tambien se puede activar
-  a mano con el boton Activar. Tambien se puede activar SIN documentos: el sistema pide
-  confirmacion y el contrato queda resaltado en amarillo hasta que se anexen.
+  a mano con el boton Activar. Tambien se puede activar SIN documentos: el sistema no
+  advierte y el contrato queda resaltado en amarillo hasta que se anexen.
 - **Estados de unidad:** `NO ALQUILADA` y `ALQUILADA` (cambian solos al activar o finalizar un contrato).
 - **Colores en las tablas:**
   - Archivo (documento de identidad / del contrato): verde si esta, amarillo si falta.
   - Estado del arrendatario: ACTIVO verde, MOROSO amarillo, INACTIVO rojo.
-  - Contrato vigente al que le faltan documentos: estado en amarillo.
+  - Estado del contrato: VIGENTE verde (amarillo si le faltan documentos), PENDIENTE amarillo, FINALIZADO rojo.
+  - Unidades: NO ALQUILADA naranja, ALQUILADA verde claro.
+  - Cobro: Pagada verde, atrasada amarilla; EN MORA con estado rojo y los dias de atraso en gradiente de rojos.
   - Cobro de rentas y mora: fila verde (claro) si esta pagada, amarilla si esta atrasada.
 - **Recibos:** al registrar un pago se puede anexar el comprobante (foto o PDF). En "Ver recibos",
   doble clic abre el comprobante y "Anexar comprobante" lo agrega o reemplaza despues.

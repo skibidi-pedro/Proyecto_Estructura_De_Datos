@@ -42,6 +42,9 @@ public class PanelUnidades extends JPanel {
         setLayout(new BorderLayout(8, 8));
         add(new JLabel("  Propiedad: " + edificio), BorderLayout.NORTH);
         Dialogos.ocultarColumna(tabla, 0);
+        // NO ALQUILADA en naranja, ALQUILADA en verde claro
+        Dialogos.colorear(tabla, (fila, col) -> col != 4 ? null
+                : modelo.getValueAt(fila, 4) == EstadoUnidad.ALQUILADA ? Dialogos.VERDE : Dialogos.NARANJA);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));

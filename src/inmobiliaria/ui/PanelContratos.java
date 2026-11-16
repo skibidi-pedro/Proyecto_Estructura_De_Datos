@@ -90,7 +90,6 @@ public class PanelContratos extends JPanel {
         botones.add(boton("Activar", () -> activar()));
         botones.add(boton("Renovar", () -> renovar()));
         botones.add(boton("Finalizar", () -> finalizar()));
-        botones.add(Dialogos.botonRefrescar(this::refrescar));
         add(botones, BorderLayout.SOUTH);
 
         refrescar();
@@ -136,14 +135,17 @@ public class PanelContratos extends JPanel {
     }
 
     // Archivo: verde con documento del contrato, amarillo si falta.
-    // Estado: un contrato VIGENTE al que le faltan documentos (del contrato o de identidad) va en amarillo.
+    // Estado: VIGENTE verde (amarillo si le faltan documentos), PENDIENTE amarillo, FINALIZADO rojo.
     private java.awt.Color colorDe(int fila, int columna) {
         Contrato c = contratos.buscar(modelo.getValueAt(fila, 0).toString());
         if (c == null) return null;
         if (columna == 6) return c.getDocumento().isEmpty() ? Dialogos.AMARILLO : Dialogos.VERDE;
-        if (columna == 7 && c.getEstado() == EstadoContrato.VIGENTE
-                && !Activacion.faltantes(c, expedientes).isEmpty()) return Dialogos.AMARILLO;
-        return null;
+        if (columna != 7) return null;
+        switch (c.getEstado()) {
+            case VIGENTE: return Activacion.faltantes(c, expedientes).isEmpty() ? Dialogos.VERDE : Dialogos.AMARILLO;
+            case PENDIENTE: return Dialogos.AMARILLO;
+            default: return Dialogos.ROJO;   // FINALIZADO
+        }
     }
 
     private void refrescar() {
@@ -280,10 +282,7 @@ public class PanelContratos extends JPanel {
     }
 
     private void activarContrato(Contrato c) {
-        String falta = Activacion.faltantes(c, expedientes);
-        if (!falta.isEmpty() && !Dialogos.confirmar(this, "Faltan documentos",
-                "Falta " + falta + ".\nActivar el contrato de todos modos? "
-                + "Quedara resaltado en amarillo hasta que se anexen.")) return;
+        String falta = Activacion.faltantes(c, expedientes);   // sin advertencia: solo se resalta en amarillo
         ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos);
         refrescar();
         Dialogos.info(this, "Contrato", "Contrato de " + nombreDe(c.getDocumentoArrendatario()) + " activado"
