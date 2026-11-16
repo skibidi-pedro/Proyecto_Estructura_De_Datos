@@ -48,7 +48,7 @@ public class PanelCobranza extends JPanel {
 
     private final JComboBox<Contrato> comboContratos = new JComboBox<>();
     private final DefaultTableModel modelo = Dialogos.modelo(
-            "Concepto", "Vencimiento", "Monto (S/)", "Saldo (S/)", "Atraso (dias)", "Estado", "Recargo (S/)");
+            "Concepto", "Vencimiento", "Saldo (S/)", "Atraso (dias)", "Estado");
     private final JTable tabla = Dialogos.tabla(modelo);
     private final JComboBox<String> filtroEstado = new JComboBox<>(
             new String[] { "Todos", "Garantia", "Pendiente", "Vencida", "EN MORA", "Pagada" });
@@ -78,11 +78,11 @@ public class PanelCobranza extends JPanel {
         // Fila: verde si esta pagada, amarilla si esta atrasada. En mora, el estado va en rojo y los dias
         // de atraso en un gradiente de rojos (rojo fuerte desde los 45 dias).
         Dialogos.colorear(tabla, (fila, col) -> {
-            String e = String.valueOf(modelo.getValueAt(fila, 5));
+            String e = String.valueOf(modelo.getValueAt(fila, 4));
             if (e.equals("Pagada")) return Dialogos.VERDE;
             if (e.equals("EN MORA")) {
-                if (col == 5) return Dialogos.ROJO;
-                if (col == 4) return Dialogos.rojoPorDias(((Number) modelo.getValueAt(fila, 4)).intValue());
+                if (col == 4) return Dialogos.ROJO;
+                if (col == 3) return Dialogos.rojoPorDias(((Number) modelo.getValueAt(fila, 3)).intValue());
                 return Dialogos.AMARILLO;
             }
             if (e.startsWith("Vencida")) return Dialogos.AMARILLO;
@@ -196,8 +196,7 @@ public class PanelCobranza extends JPanel {
         for (int i = 0; i < cuotas.getTamano(); i++) {
             Cuota q = cuotas.obtener(i);
             filas.add(new Object[] { etiqueta(q.getNumero()), Fechas.convertirAString(q.getVencimiento()),
-                    Dialogos.dinero(q.getMonto()), Dialogos.dinero(q.getSaldo()),
-                    mora.diasAtraso(q, hoy()), estado(q), Dialogos.dinero(mora.recargo(q, hoy())) });
+                    Dialogos.dinero(q.getSaldo()), mora.diasAtraso(q, hoy()), estado(q) });
         }
         Dialogos.poblar(tabla, modelo, filas);
         boolean moroso = mora.esMoroso(c.getDocumentoArrendatario(), contratos.listar(), hoy());
@@ -215,7 +214,7 @@ public class PanelCobranza extends JPanel {
         String f = (String) filtroEstado.getSelectedItem();
         Dialogos.filtrar(tabla, fila -> f.equals("Todos")
                 || (f.equals("Garantia") ? "Garantia".equals(modelo.getValueAt(fila, 0))
-                                         : String.valueOf(modelo.getValueAt(fila, 5)).startsWith(f)));
+                                         : String.valueOf(modelo.getValueAt(fila, 4)).startsWith(f)));
     }
 
     private void registrarPago() {
