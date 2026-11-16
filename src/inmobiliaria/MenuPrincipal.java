@@ -259,7 +259,7 @@ public class MenuPrincipal extends JFrame {
         c.anchor = GridBagConstraints.WEST;
 
         c.gridx = 0; c.gridy = 0; c.gridwidth = 3;
-        Dialogos.mostrarComo(comboPropiedades, e -> e.getNombre() + " (" + e.getDireccion() + ")");
+        Dialogos.mostrarComo(comboPropiedades, e -> e.getNombre());
         comboPropiedades.setPreferredSize(new Dimension(260, 24));
         p.add(comboPropiedades, c);
 
