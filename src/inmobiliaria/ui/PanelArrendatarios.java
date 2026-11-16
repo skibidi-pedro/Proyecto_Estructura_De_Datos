@@ -33,7 +33,7 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  * Arrendatarios. Usa ArrendatarioService (Integrante 3).
  * El documento de identidad es la clave (RN-01) y se muestra: lo escribe el usuario.
  * Es un panel que MenuPrincipal muestra a la derecha de la ventana; se refresca solo cada segundo.
- * Un arrendatario con contratos no se puede eliminar (se puede marcar INACTIVO).
+ * Un arrendatario con contratos no se puede eliminar .
  * Al crear o editar se anexa su documento de identidad (PDF, Word o foto): la columna Archivo
  * muestra el nombre (Identidad.jpg) y con doble clic en la fila se abre. Si con ese documento
  * quedan completos los de un contrato pendiente, se pregunta si activarlo (ver Activacion).
@@ -186,7 +186,7 @@ public class PanelArrendatarios extends JPanel {
         JTextField archivo = Dialogos.texto("");
         if (!Dialogos.formulario(this, "Nuevo arrendatario",
                 new String[] { "Numero de documento", "Nombres completos", "Telefono", "Correo",
-                        "Documento de identidad (archivo)" },
+                        "Documento de identidad" },
                 new JComponent[] { documento, nombres, telefono, correo, Dialogos.campoArchivo(this, archivo) })) return;
         File f = archivoElegido(archivo);
         Arrendatario a = arrendatarios.registrar(documento.getText(), nombres.getText(), telefono.getText(),
@@ -203,7 +203,7 @@ public class PanelArrendatarios extends JPanel {
         JTextField archivo = Dialogos.texto("");
         if (!Dialogos.formulario(this, "Editar " + a.getDocumentoIdentidad(),
                 new String[] { "Nombres completos", "Telefono", "Correo",
-                        "Documento de identidad (archivo, solo si lo cambia)" },
+                        "Documento de identidad" },
                 new JComponent[] { nombres, telefono, correo, Dialogos.campoArchivo(this, archivo) })) return;
         File f = archivoElegido(archivo);
         arrendatarios.actualizar(a.getDocumentoIdentidad(), nombres.getText(), telefono.getText(),
@@ -228,7 +228,7 @@ public class PanelArrendatarios extends JPanel {
         for (int i = 0; i < lista.getTamano(); i++) {
             if (lista.obtener(i).getDocumentoArrendatario().equals(a.getDocumentoIdentidad()))
                 throw new IllegalArgumentException(
-                        "El arrendatario tiene contratos registrados: marquelo INACTIVO en lugar de eliminarlo.");
+                        "El arrendatario tiene contratos registrados: no se puede eliminar.");
         }
         if (!Dialogos.confirmar(this, "Eliminar", "Eliminar a " + a.getNombresCompletos() + "?")) return;
         arrendatarios.eliminar(a.getDocumentoIdentidad());

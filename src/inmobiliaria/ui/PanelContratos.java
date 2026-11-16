@@ -16,7 +16,6 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import inmobiliaria.arrendatarios.modelo.Arrendatario;
-import inmobiliaria.arrendatarios.modelo.EstadoArrendatario;
 import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
 import inmobiliaria.cobranza.modelo.Cuota;
 import inmobiliaria.cobranza.servicio.MoraService;
@@ -47,7 +46,7 @@ import inmobiliaria.propiedades.servicio.PropiedadService;
  *  - deuda y mora al finalizar -> PagoService y MoraService (RN-13)
  *  - el numero de contrato se asigna solo (CON-001, ...) y no se muestra (columna oculta en la tabla)
  *  - es un panel que MenuPrincipal muestra a la derecha de la ventana, con refresco automatico cada segundo
- *  - arrendatario            -> se elige de ArrendatarioService (los inactivos no aparecen)
+ *  - arrendatario            -> se elige de ArrendatarioService (tambien los inactivos)
  *  - documentos (RN-06)      -> identidad del arrendatario (ExpedienteService) y documento del
  *    contrato. Se puede activar sin ellos: pide confirmacion y queda resaltado en amarillo (ver Activacion)
  *  - el documento del contrato (PDF, Word o foto) se anexa al crear el contrato o despues con
@@ -184,7 +183,7 @@ public class PanelContratos extends JPanel {
         JComboBox<Arrendatario> inquilinos = new JComboBox<>();
         ListaSimple<Arrendatario> registrados = arrendatarios.listar();
         for (int i = 0; i < registrados.getTamano(); i++) {
-            if (registrados.obtener(i).getEstado() != EstadoArrendatario.INACTIVO) inquilinos.addItem(registrados.obtener(i));
+            inquilinos.addItem(registrados.obtener(i));
         }
         if (inquilinos.getItemCount() == 0)
             throw new IllegalArgumentException(
