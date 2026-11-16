@@ -98,7 +98,7 @@ public class Dialogos {
     public static LocalDate fecha(JTextField campo, String nombre) {
         LocalDate f = Fechas.convertirALocalDate(campo.getText());
         if (f == null)
-            throw new IllegalArgumentException("\"" + nombre + "\" no es una fecha valida (use AAAA-MM-DD)");
+            throw new IllegalArgumentException("\"" + nombre + "\" no es una fecha valida, use AAAA-MM-DD");
         return f;
     }
 

@@ -163,7 +163,7 @@ public class PanelArrendatarios extends JPanel {
         File f = new File(ruta.getText());
         if (!f.isFile()) throw new IllegalArgumentException("No se encuentra el archivo elegido.");
         if (!Archivos.extensionValida(f.getName()))
-            throw new IllegalArgumentException("Formato no permitido. Use PDF, Word (doc, docx) o imagen (jpg, png).");
+            throw new IllegalArgumentException("Formato no permitido. Use PDF, Word o imagen jpg o png.");
         return f;
     }
 

@@ -241,7 +241,7 @@ public class PanelContratos extends JPanel {
         File f = new File(ruta.getText());
         if (!f.isFile()) throw new IllegalArgumentException("No se encuentra el archivo elegido.");
         if (!Archivos.extensionValida(f.getName()))
-            throw new IllegalArgumentException("Formato no permitido. Use PDF, Word (doc, docx) o imagen (jpg, png).");
+            throw new IllegalArgumentException("Formato no permitido. Use PDF, Word o imagen jpg o png.");
         return f;
     }
 
@@ -253,7 +253,7 @@ public class PanelContratos extends JPanel {
                     contratos, propiedades, pagos, expedientes);
         } else {
             Dialogos.info(this, "Contrato", "Contrato creado para " + nombreDe(c.getDocumentoArrendatario())
-                    + " (pendiente de activar).\nPara activarlo falta " + falta + ".");
+                    + ". Esta pendiente de activar.\nPara activarlo falta " + falta + ".");
         }
     }
 
@@ -283,8 +283,7 @@ public class PanelContratos extends JPanel {
     private void activarContrato(Contrato c) {
         ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos);
         refrescar();
-        Dialogos.info(this, "Contrato", "Contrato de " + nombreDe(c.getDocumentoArrendatario()) + " activado.\n"
-                + Activacion.resumen(c, cuotas));
+        Dialogos.info(this, "Contrato", Activacion.resumen(c, cuotas));
     }
 
     // ---------- Renovar (RN-12) + cuotas del periodo nuevo ----------

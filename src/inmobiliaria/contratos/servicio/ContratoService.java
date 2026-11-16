@@ -72,7 +72,7 @@ public class ContratoService {
     // Version estricta: exige el expediente completo (documento de identidad y documento del contrato).
     public Contrato activar(String numero, boolean expedienteCompleto) {
         if (!expedienteCompleto && buscarObligatorio(numero).getEstado() == EstadoContrato.PENDIENTE)   // RN-06
-            throw new IllegalArgumentException("El expediente esta incompleto (documento de identidad y documento del contrato)");
+            throw new IllegalArgumentException("El expediente esta incompleto: falta el documento de identidad o el documento del contrato");
         return activar(numero);
     }
 

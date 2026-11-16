@@ -33,10 +33,10 @@ public class Activacion {
     public static String faltantes(Contrato c, ExpedienteService expedientes) {
         StringBuilder sb = new StringBuilder();
         if (!expedientes.expedienteCompleto(c.getDocumentoArrendatario()))
-            sb.append("el documento de identidad del arrendatario (se anexa en Arrendatarios)");
+            sb.append("el documento de identidad del arrendatario, que se anexa en Arrendatarios");
         if (c.getDocumento().isEmpty()) {
             if (sb.length() > 0) sb.append(" y ");
-            sb.append("el documento del contrato (use Anexar documento en Contratos)");
+            sb.append("el documento del contrato, que se anexa con Anexar documento en Contratos");
         }
         return sb.toString();
     }
@@ -66,7 +66,7 @@ public class Activacion {
                     + "Activar su contrato de " + donde + "?")) continue;
             try {
                 ListaSimple<Cuota> cuotas = activar(c, contratos, propiedades, pagos);
-                Dialogos.info(padre, "Contrato", "Contrato activado.\n" + resumen(c, cuotas));
+                Dialogos.info(padre, "Contrato", resumen(c, cuotas));
             } catch (IllegalArgumentException ex) {
                 Dialogos.error(padre, ex.getMessage());
             }
@@ -84,11 +84,8 @@ public class Activacion {
 
     // Texto para el mensaje de contrato activado
     public static String resumen(Contrato c, ListaSimple<Cuota> cuotas) {
-        String t = "Se generaron " + mensuales(cuotas) + " cuotas mensuales.";
-        if (c.getGarantia() > 0)
-            t += "\nLa garantia (S/ " + Dialogos.dinero(c.getGarantia())
-                    + ") quedo pendiente de cobro como cuota 0 en Cobro de rentas y mora.";
-        return t;
+        return "Se generaron " + mensuales(cuotas) + " cuotas mensuales"
+                + (c.getGarantia() > 0 ? " y la garantia" : "");
     }
 
     // Contratos PENDIENTES de un arrendatario (los que esperan sus documentos)

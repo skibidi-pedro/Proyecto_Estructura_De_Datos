@@ -99,8 +99,8 @@ public class PagoService {
         if (monto <= 0)                                                // RN-09
             throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
         if (monto > cuota.getSaldo())                                  // RN-09
-            throw new IllegalArgumentException("El pago (S/ " + monto
-                    + ") supera el saldo de la cuota (S/ " + cuota.getSaldo() + ")");
+            throw new IllegalArgumentException("El pago de S/ " + monto
+                    + " supera el saldo de la cuota, S/ " + cuota.getSaldo());
 
         cuota.aplicarPago(monto);
         ultimoRecibo++;                                                // RN-10: correlativo

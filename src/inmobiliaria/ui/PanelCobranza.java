@@ -213,7 +213,7 @@ public class PanelCobranza extends JPanel {
         Contrato c = (Contrato) comboContratos.getSelectedItem();
         Object numero = Dialogos.seleccionado(tabla, 0);
         if (c == null || numero == null) {
-            Dialogos.error(this, "Seleccione una cuota (o la garantia) de la tabla.");
+            Dialogos.error(this, "Seleccione una cuota o la garantia de la tabla.");
             return;
         }
         int n = numero instanceof Integer i ? i : Cuota.NUMERO_GARANTIA;
@@ -232,7 +232,7 @@ public class PanelCobranza extends JPanel {
         Contrato c = (Contrato) comboContratos.getSelectedItem();
         Object numero = Dialogos.seleccionado(tabla, 0);
         if (c == null || numero == null) {
-            Dialogos.error(this, "Seleccione una cuota (o la garantia) de la tabla.");
+            Dialogos.error(this, "Seleccione una cuota o la garantia de la tabla.");
             return;
         }
         Cuota cuota = pagos.buscarCuota(c.getNumero(), numero instanceof Integer n ? n : Cuota.NUMERO_GARANTIA);
@@ -317,7 +317,7 @@ public class PanelCobranza extends JPanel {
         botones.add(cerrar);
 
         dialogo.setLayout(new BorderLayout(6, 6));
-        dialogo.add(new JLabel("  Doble clic en un recibo para abrir su comprobante (foto, PDF)."), BorderLayout.NORTH);
+        dialogo.add(new JLabel("  Doble clic en un recibo para abrir su comprobante."), BorderLayout.NORTH);
         dialogo.add(new JScrollPane(tablaRecibos), BorderLayout.CENTER);
         dialogo.add(botones, BorderLayout.SOUTH);
         dialogo.setSize(620, 320);

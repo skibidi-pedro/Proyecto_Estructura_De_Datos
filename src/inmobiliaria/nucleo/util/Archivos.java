@@ -40,7 +40,7 @@ public class Archivos {
         if (origen == null || !origen.isFile())
             throw new IllegalArgumentException("Seleccione un archivo valido");
         if (!extensionValida(origen.getName()))
-            throw new IllegalArgumentException("Formato no permitido. Use PDF, Word (doc, docx) o imagen (jpg, png).");
+            throw new IllegalArgumentException("Formato no permitido. Use PDF, Word o imagen jpg o png.");
 
         String sub = subcarpeta.replaceAll("[^A-Za-z0-9_.-]", "_");
         String nombre = nombreBase + "." + extension(origen.getName());
