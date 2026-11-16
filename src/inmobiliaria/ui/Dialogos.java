@@ -189,23 +189,29 @@ public class Dialogos {
     }
 
     // Llama a accion cada segundo mientras el panel este visible; se detiene cuando el panel
-    // se quita de la ventana (al cerrar el modulo).
+    // se oculta (al cerrar el modulo o cambiar a otro).
     // Como poblar() no toca la tabla si nada cambio, el costo es leer los datos una vez por segundo.
     public static void autoRefrescar(JComponent panel, Runnable accion) {
-        Timer t = new Timer(1000, e -> {
-            if (!panel.isShowing()) return;
-            try {
-                accion.run();
-            } catch (RuntimeException ex) {
-                // un dato pudo cambiar a medio refresco (p. ej. una baja): el siguiente tick reintenta
-            }
-        });
+        Timer t = new Timer(1000, e -> refrescarSeguro(accion));
+        // El panel se conserva entre aperturas del modulo (MenuPrincipal), asi que el timer corre solo
+        // mientras se ve: al mostrarse refresca de inmediato y al ocultarse se detiene.
         panel.addHierarchyListener(e -> {
-            if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0 && !panel.isDisplayable()) {
+            if ((e.getChangeFlags() & HierarchyEvent.SHOWING_CHANGED) == 0) return;
+            if (panel.isShowing()) {
+                refrescarSeguro(accion);
+                t.start();
+            } else {
                 t.stop();
             }
         });
-        t.start();
+    }
+
+    private static void refrescarSeguro(Runnable accion) {
+        try {
+            accion.run();
+        } catch (RuntimeException ex) {
+            // un dato pudo cambiar a medio refresco (p. ej. una baja): el siguiente tick reintenta
+        }
     }
 
     // ---------- Textos sin codigos ----------

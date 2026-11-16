@@ -22,7 +22,7 @@ import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 
 /**
- * Arrendatarios (el aval es un campo de texto). Usa ArrendatarioService (Integrante 3).
+ * Arrendatarios. Usa ArrendatarioService (Integrante 3).
  * El documento de identidad es la clave (RN-01) y se muestra: lo escribe el usuario.
  * Es un panel que MenuPrincipal muestra a la derecha de la ventana; se refresca solo cada segundo.
  * Un arrendatario con contratos no se puede eliminar (se puede marcar INACTIVO).
@@ -31,7 +31,7 @@ public class PanelArrendatarios extends JPanel {
     private final ArrendatarioService arrendatarios;
     private final ContratoService contratos;
     private final DefaultTableModel modelo = Dialogos.modelo(
-            "Documento", "Nombres", "Telefono", "Correo", "Aval", "Estado");
+            "Documento", "Nombres", "Telefono", "Correo", "Estado");
     private final JTable tabla = Dialogos.tabla(modelo);
     private final JTextField buscar = new JTextField(10);
 
@@ -79,7 +79,7 @@ public class PanelArrendatarios extends JPanel {
         for (int i = 0; i < lista.getTamano(); i++) {
             Arrendatario a = lista.obtener(i);
             filas.add(new Object[] { a.getDocumentoIdentidad(), a.getNombresCompletos(), a.getTelefono(),
-                    a.getCorreo(), a.getAval().isEmpty() ? "-" : a.getAval(), a.getEstado() });
+                    a.getCorreo(), a.getEstado() });
         }
         Dialogos.poblar(tabla, modelo, filas);
     }
@@ -112,12 +112,11 @@ public class PanelArrendatarios extends JPanel {
         JTextField nombres = Dialogos.texto("");
         JTextField telefono = Dialogos.texto("");
         JTextField correo = Dialogos.texto("");
-        JTextField aval = Dialogos.texto("");
         if (!Dialogos.formulario(this, "Nuevo arrendatario",
-                new String[] { "Documento de identidad", "Nombres completos", "Telefono", "Correo", "Aval" },
-                new JComponent[] { documento, nombres, telefono, correo, aval })) return;
+                new String[] { "Documento de identidad", "Nombres completos", "Telefono", "Correo" },
+                new JComponent[] { documento, nombres, telefono, correo })) return;
         arrendatarios.registrar(documento.getText(), nombres.getText(), telefono.getText(),
-                correo.getText(), aval.getText());
+                correo.getText());
         refrescar();
     }
 
@@ -126,12 +125,11 @@ public class PanelArrendatarios extends JPanel {
         JTextField nombres = Dialogos.texto(a.getNombresCompletos());
         JTextField telefono = Dialogos.texto(a.getTelefono());
         JTextField correo = Dialogos.texto(a.getCorreo());
-        JTextField aval = Dialogos.texto(a.getAval());
         if (!Dialogos.formulario(this, "Editar " + a.getDocumentoIdentidad(),
-                new String[] { "Nombres completos", "Telefono", "Correo", "Aval" },
-                new JComponent[] { nombres, telefono, correo, aval })) return;
+                new String[] { "Nombres completos", "Telefono", "Correo" },
+                new JComponent[] { nombres, telefono, correo })) return;
         arrendatarios.actualizar(a.getDocumentoIdentidad(), nombres.getText(), telefono.getText(),
-                correo.getText(), aval.getText());
+                correo.getText());
         refrescar();
     }
 

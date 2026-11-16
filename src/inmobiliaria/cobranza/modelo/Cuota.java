@@ -7,12 +7,18 @@ import inmobiliaria.nucleo.util.Fechas;
 /**
  * Cuota mensual de un contrato (vencimiento, monto, saldo).
  *
+ * La cuota numero 0 es la GARANTIA del contrato: se genera al activarlo, vence en la fecha de inicio
+ * y se cobra igual que una cuota (pago total o parcial, con recibo). No es renta: no cuenta en la deuda
+ * de renta, no genera recargo por mora y no es un ingreso.
+ *
  * Responsable: Integrante 4 - Pucho Lizana Pedro Eduardo Mar
  * Reglas: RN-07, RN-09
  */
 public class Cuota implements Persistible {
+    public static final int NUMERO_GARANTIA = 0;
+
     private String numeroContrato;
-    private int numero;              // 1, 2, 3... dentro del contrato
+    private int numero;              // 0 = garantia; 1, 2, 3... = renta mensual
     private LocalDate vencimiento;
     private double monto;
     private double saldo;            // lo que falta pagar (RN-09: puede haber pagos parciales)
@@ -34,6 +40,10 @@ public class Cuota implements Persistible {
     public LocalDate getVencimiento() { return vencimiento; }
     public double getMonto() { return monto; }
     public double getSaldo() { return saldo; }
+
+    public boolean esGarantia() {
+        return numero == NUMERO_GARANTIA;
+    }
 
     public boolean estaPagada() {
         return saldo <= 0;

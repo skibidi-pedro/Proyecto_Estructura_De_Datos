@@ -2,6 +2,7 @@ package inmobiliaria.reportes;
 
 import java.time.LocalDate;
 import java.util.Locale;
+import inmobiliaria.cobranza.modelo.Cuota;
 import inmobiliaria.cobranza.modelo.Pago;
 import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
@@ -41,7 +42,20 @@ public class ReporteService {
         ListaSimple<Pago> lista = pagos.listarPagos();
         for (int i = 0; i < lista.getTamano(); i++) {
             Pago p = lista.obtener(i);
+            if (p.getNumeroCuota() == Cuota.NUMERO_GARANTIA) continue;   // la garantia es un deposito, no ingreso
             if (!p.getFecha().isBefore(desde) && !p.getFecha().isAfter(hasta)) total += p.getMonto();
+        }
+        return Math.round(total * 100.0) / 100.0;
+    }
+
+    // Garantias cobradas en el periodo; se informan aparte porque se devuelven al terminar el contrato
+    public double garantiasRecibidas(LocalDate desde, LocalDate hasta) {
+        double total = 0;
+        ListaSimple<Pago> lista = pagos.listarPagos();
+        for (int i = 0; i < lista.getTamano(); i++) {
+            Pago p = lista.obtener(i);
+            if (p.getNumeroCuota() == Cuota.NUMERO_GARANTIA
+                    && !p.getFecha().isBefore(desde) && !p.getFecha().isAfter(hasta)) total += p.getMonto();
         }
         return Math.round(total * 100.0) / 100.0;
     }
@@ -60,6 +74,7 @@ public class ReporteService {
             ListaSimple<Pago> delContrato = pagos.pagosDe(numero);
             for (int j = 0; j < delContrato.getTamano(); j++) {
                 Pago p = delContrato.obtener(j);
+                if (p.getNumeroCuota() == Cuota.NUMERO_GARANTIA) continue;
                 if (!p.getFecha().isBefore(desde) && !p.getFecha().isAfter(hasta)) {
                     subtotal += p.getMonto();
                     n++;
@@ -71,6 +86,9 @@ public class ReporteService {
             }
         }
         sb.append(String.format(Locale.US, "TOTAL: %d pagos, S/ %.2f", cantidad, totalIngresos(desde, hasta)));
+        double garantias = garantiasRecibidas(desde, hasta);
+        if (garantias > 0)
+            sb.append(String.format(Locale.US, "%nGarantias recibidas (depositos, no son ingreso): S/ %.2f", garantias));
         return sb.toString();
     }
 

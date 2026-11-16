@@ -117,13 +117,19 @@ public class ContratoService {
     // ---------- Finalizar + liquidar garantia (RN-03, RN-13) ----------
     // deudaRenta y mora vienen de cobranza, los danos los registra el usuario
     public LiquidacionGarantia finalizar(String numero, double deudaRenta, double mora, double danos) {
+        return finalizar(numero, deudaRenta, mora, danos, buscarObligatorio(numero).getGarantia());
+    }
+
+    // Igual, pero liquidando la garantia que el inquilino realmente pago (puede ser menos que la pactada)
+    public LiquidacionGarantia finalizar(String numero, double deudaRenta, double mora, double danos,
+                                         double garantiaPagada) {
         Contrato c = buscarObligatorio(numero);
         if (c.getEstado() != EstadoContrato.VIGENTE)
             throw new IllegalArgumentException("Solo se puede finalizar un contrato vigente");
 
         c.setEstado(EstadoContrato.FINALIZADO);
         historial.registrarOperacion("Contrato finalizado: " + numero);
-        return new LiquidacionGarantia(c.getGarantia(), deudaRenta, mora, danos);
+        return new LiquidacionGarantia(garantiaPagada, deudaRenta, mora, danos);
     }
 
     // ---------- Consultas ----------

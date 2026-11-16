@@ -57,9 +57,14 @@ public class PruebaCobranza {
         verificar("No genera cuotas de un contrato pendiente", lanza(() -> pagos.generarCuotas(c)));
         contratos.activar("C1", true);
         ListaSimple<Cuota> generadas = pagos.generarCuotas(c);
-        verificar("Genera 6 cuotas (ene a jun)", generadas.getTamano() == 6);
-        verificar("Primer vencimiento 2026-01-10", generadas.obtener(0).getVencimiento().equals(LocalDate.of(2026, 1, 10)));
-        verificar("Ultimo vencimiento 2026-06-10", generadas.obtener(5).getVencimiento().equals(LocalDate.of(2026, 6, 10)));
+        verificar("Genera la garantia (cuota 0) y 6 cuotas mensuales (ene a jun)", generadas.getTamano() == 7);
+        verificar("La primera es la garantia: cuota 0 por S/ 1000, vence al iniciar el contrato",
+                generadas.obtener(0).esGarantia() && generadas.obtener(0).getMonto() == 1000
+                && generadas.obtener(0).getVencimiento().equals(LocalDate.of(2026, 1, 10)));
+        verificar("Primer vencimiento de renta 2026-01-10", generadas.obtener(1).getVencimiento().equals(LocalDate.of(2026, 1, 10)));
+        verificar("Ultimo vencimiento 2026-06-10", generadas.obtener(6).getVencimiento().equals(LocalDate.of(2026, 6, 10)));
+        verificar("La deuda de renta no incluye la garantia", pagos.deudaPendiente("C1") == 6000);
+        verificar("Garantia pendiente = 1000", pagos.garantiaPendiente("C1") == 1000);
         verificar("No genera cuotas dos veces", lanza(() -> pagos.generarCuotas(c)));
 
         // ---- RN-09 / RN-10: pagos y recibos ----
@@ -102,7 +107,7 @@ public class PruebaCobranza {
         ListaSimple<Cuota> nuevas = pagos.generarCuotasRenovacion(c, finAnterior);
         verificar("Renovacion agrega 2 cuotas (jul, ago)", nuevas.getTamano() == 2);
         verificar("La numeracion continua en 7", nuevas.obtener(0).getNumero() == 7);
-        verificar("Total de cuotas = 8", pagos.cuotasDe("C1").getTamano() == 8);
+        verificar("Total de cuotas = 9 (garantia + 8 de renta)", pagos.cuotasDe("C1").getTamano() == 9);
 
         // ---- RN-12: alertas ----
         LocalDate cerca = LocalDate.of(2026, 8, 10);
@@ -127,7 +132,7 @@ public class PruebaCobranza {
         pagos.guardar();
         PagoService recargado = new PagoService(new Historial());
         recargado.cargar();
-        verificar("CSV: se recargan las 8 cuotas", recargado.listarCuotas().getTamano() == 8);
+        verificar("CSV: se recargan las 9 cuotas", recargado.listarCuotas().getTamano() == 9);
         verificar("CSV: se recargan los 2 pagos", recargado.listarPagos().getTamano() == 2);
         verificar("CSV: se conserva el saldo parcial", recargado.buscarCuota("C1", 2).getSaldo() == 600);
         Recibo r3 = recargado.registrarPago("C1", 2, 100, LocalDate.of(2026, 3, 21));
@@ -152,6 +157,24 @@ public class PruebaCobranza {
         } catch (java.io.IOException e) {
             verificar("No se pudo crear el archivo temporal: " + e.getMessage(), false);
         }
+
+        // ---- Garantia (cuota 0): se cobra como una cuota ----
+        verificar("La garantia vencida no cuenta como atraso ni como mora",
+                mora.diasAtraso(pagos.buscarCuota("C1", 0), hoy) == 0 && !mora.contratoEnMora("C0", hoy));
+        Recibo rg = pagos.registrarPago("C1", 0, 400, LocalDate.of(2026, 1, 10));
+        verificar("Pago parcial de la garantia deja saldo 600", pagos.garantiaPendiente("C1") == 600
+                && rg.getNumeroCuota() == 0 && rg.getSaldoCuota() == 600);
+        verificar("Garantia pagada = 400", pagos.garantiaPagada(c) == 400);
+        verificar("No se paga mas que el saldo de la garantia", lanza(() -> pagos.registrarPago("C1", 0, 700, hoy)));
+        verificar("El pago de la garantia no es ingreso (enero sigue en 1000)",
+                reportes.totalIngresos(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) == 1000);
+        verificar("El reporte informa las garantias recibidas aparte",
+                reportes.reporteIngresos(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)).contains("Garantias recibidas")
+                && reportes.garantiasRecibidas(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31)) == 400);
+        pagos.registrarPago("C1", 0, 600, LocalDate.of(2026, 1, 12));
+        verificar("Garantia pagada completa", pagos.garantiaPendiente("C1") == 0 && pagos.garantiaPagada(c) == 1000);
+        verificar("Liquidacion con la garantia realmente pagada",
+                contratos.finalizar("C1", 0, 0, 200, pagos.garantiaPagada(c)).getMontoADevolver() == 800);
 
         System.out.println(fallos == 0 ? "\nTodas las pruebas pasaron." : "\nFallaron " + fallos + " pruebas.");
         if (fallos > 0) System.exit(1);

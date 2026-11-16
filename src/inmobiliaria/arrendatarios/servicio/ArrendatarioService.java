@@ -10,7 +10,7 @@ import inmobiliaria.nucleo.persistencia.Persistible;
 import inmobiliaria.nucleo.util.Validador;
 
 /**
- * CRUD de arrendatarios (el aval es un dato de texto); busqueda por documento de identidad (2.2).
+ * CRUD de arrendatarios; busqueda por documento de identidad (2.2).
  * Los arrendatarios viven en una tabla hash cuya clave es el documento (RN-01: no se repite).
  *
  * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
@@ -29,7 +29,7 @@ public class ArrendatarioService {
 
     // ---------- Registrar (RN-01) ----------
     public Arrendatario registrar(String documento, String nombres, String telefono,
-                                  String correo, String aval) {
+                                  String correo) {
         if (!Validador.esTextoValido(documento) || !Validador.esTextoValido(nombres))
             throw new IllegalArgumentException("Documento y nombres son obligatorios");
         documento = documento.trim();
@@ -38,7 +38,7 @@ public class ArrendatarioService {
         if (tabla.buscar(documento) != null)                            // RN-01
             throw new IllegalArgumentException("Ya existe un arrendatario con documento " + documento);
 
-        Arrendatario a = new Arrendatario(documento, nombres, telefono, correo, aval);
+        Arrendatario a = new Arrendatario(documento, nombres, telefono, correo);
         tabla.insertar(a);
         historial.registrarOperacion("Arrendatario registrado: " + documento);
         return a;
@@ -46,14 +46,13 @@ public class ArrendatarioService {
 
     // ---------- Modificar datos de contacto ----------
     public Arrendatario actualizar(String documento, String nombres, String telefono,
-                                   String correo, String aval) {
+                                   String correo) {
         Arrendatario a = buscarObligatorio(documento);
         if (!Validador.esTextoValido(nombres))
             throw new IllegalArgumentException("Los nombres son obligatorios");
         a.setNombresCompletos(nombres);
         a.setTelefono(telefono);
         a.setCorreo(correo);
-        a.setAval(aval);
         historial.registrarOperacion("Arrendatario actualizado: " + documento);
         return a;
     }

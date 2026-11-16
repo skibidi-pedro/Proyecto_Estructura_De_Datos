@@ -3,7 +3,7 @@ package inmobiliaria.arrendatarios.modelo;
 import inmobiliaria.nucleo.persistencia.Persistible;
 
 /**
- * Entidad arrendatario. Se guarda en data/arrendatarios.csv. El aval es un solo dato de texto (sin documento, nombre ni ingresos).
+ * Entidad arrendatario. Se guarda en data/arrendatarios.csv.
  *
  * Responsable: Integrante 3 - Quispe Rodriguez Carlos Manuel Ignacio
  * Reglas: RN-01
@@ -13,7 +13,6 @@ public class Arrendatario implements Persistible {
     private String nombresCompletos;
     private String telefono;
     private String correo;
-    private String aval;
     private EstadoArrendatario estado;
 
     // Vacio, para poder usar desdeLineaCSV al cargar
@@ -21,12 +20,11 @@ public class Arrendatario implements Persistible {
     }
 
     public Arrendatario(String documentoIdentidad, String nombresCompletos, String telefono,
-                        String correo, String aval) {
+                        String correo) {
         this.documentoIdentidad = documentoIdentidad;
         this.nombresCompletos = limpiar(nombresCompletos);
         this.telefono = limpiar(telefono);
         this.correo = limpiar(correo);
-        this.aval = limpiar(aval);
         this.estado = EstadoArrendatario.ACTIVO;
     }
 
@@ -34,13 +32,11 @@ public class Arrendatario implements Persistible {
     public String getNombresCompletos() { return nombresCompletos; }
     public String getTelefono() { return telefono; }
     public String getCorreo() { return correo; }
-    public String getAval() { return aval; }
     public EstadoArrendatario getEstado() { return estado; }
 
     public void setNombresCompletos(String v) { this.nombresCompletos = limpiar(v); }
     public void setTelefono(String v) { this.telefono = limpiar(v); }
     public void setCorreo(String v) { this.correo = limpiar(v); }
-    public void setAval(String v) { this.aval = limpiar(v); }
     public void setEstado(EstadoArrendatario estado) { this.estado = estado; }
 
     // El separador del CSV es ';', asi que no puede aparecer en los textos
@@ -51,7 +47,7 @@ public class Arrendatario implements Persistible {
     @Override
     public String aLineaCSV() {
         return documentoIdentidad + ";" + nombresCompletos + ";" + telefono + ";"
-                + correo + ";" + aval + ";" + estado;
+                + correo + ";" + estado;
     }
 
     @Override
@@ -61,8 +57,8 @@ public class Arrendatario implements Persistible {
         nombresCompletos = p[1];
         telefono = p[2];
         correo = p[3];
-        aval = p[4];
-        estado = EstadoArrendatario.valueOf(p[5]);
+        // el estado es siempre el ultimo campo: asi tambien se leen los CSV viejos (que tenian un campo extra)
+        estado = EstadoArrendatario.valueOf(p[p.length - 1]);
     }
 
     @Override

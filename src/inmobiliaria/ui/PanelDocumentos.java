@@ -189,8 +189,7 @@ public class PanelDocumentos extends JPanel {
                     + "Activar su contrato de " + donde + "?")) continue;
             try {
                 ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos, expedientes);
-                Dialogos.info(this, "Contrato", "Contrato activado.\nSe generaron " + cuotas.getTamano()
-                        + " cuotas mensuales.");
+                Dialogos.info(this, "Contrato", "Contrato activado.\n" + Activacion.resumen(c, cuotas));
             } catch (IllegalArgumentException ex) {
                 Dialogos.error(this, ex.getMessage());
             }

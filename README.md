@@ -68,5 +68,10 @@ Morosidad, Ocupacion y Alertas. Un contrato solo se activa con el expediente com
 - **Recibos:** al registrar un pago se puede anexar el comprobante (foto o PDF). En
   "Ver recibos", doble clic abre el comprobante y "Anexar comprobante" lo agrega o reemplaza
   despues. Se guardan en `data/archivos/recibos/`.
-- **Arrendatarios:** el aval es un solo campo de texto opcional.
+- **Garantia:** al activar un contrato con garantia se crea la cuota 0 ("Garantia"), que vence el dia
+  de inicio y se cobra en Cobro de rentas y mora como cualquier cuota (pago total o parcial, con recibo
+  y comprobante). No cuenta como deuda de renta, ni genera recargo por mora, ni es ingreso (el reporte
+  la informa aparte). Al finalizar el contrato se liquida con la garantia realmente pagada.
+- **Pestañas:** cada modulo conserva lo que tenia elegido (arrendatario, contrato, fila) al cambiar
+  de uno a otro. Al cambiar de propiedad se reinician, salvo Arrendatarios y Documentos.
 - `data/archivos/` esta en `.gitignore`: son documentos personales.

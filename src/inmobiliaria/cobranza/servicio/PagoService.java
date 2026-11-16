@@ -43,10 +43,16 @@ public class PagoService {
         if (!cuotasDe(c.getNumero()).estaVacia())
             throw new IllegalArgumentException("El contrato " + c.getNumero() + " ya tiene cuotas");
 
-        ListaSimple<Cuota> nuevas = GeneradorCuotas.generar(c);
+        // Cuota 0 = garantia (si el contrato la tiene), vence el dia que empieza el contrato
+        ListaSimple<Cuota> nuevas = new ListaSimple<>();
+        if (c.getGarantia() > 0)
+            nuevas.agregar(new Cuota(c.getNumero(), Cuota.NUMERO_GARANTIA, c.getFechaInicio(), c.getGarantia()));
+        ListaSimple<Cuota> mensuales = GeneradorCuotas.generar(c);
+        for (int i = 0; i < mensuales.getTamano(); i++) nuevas.agregar(mensuales.obtener(i));
         agregarCuotas(nuevas);
         historial.registrarOperacion("Cuotas generadas: contrato " + c.getNumero()
-                + " (" + nuevas.getTamano() + ")");
+                + " (" + mensuales.getTamano() + " mensuales"
+                + (c.getGarantia() > 0 ? " y garantia" : "") + ")");
         return nuevas;
     }
 
@@ -55,12 +61,21 @@ public class PagoService {
         if (c.getEstado() != EstadoContrato.VIGENTE)
             throw new IllegalArgumentException("Solo se generan cuotas de un contrato vigente");
 
-        int siguiente = cuotasDe(c.getNumero()).getTamano() + 1;
+        int siguiente = ultimoNumeroDeCuota(c.getNumero()) + 1;   // la cuota 0 (garantia) no cuenta
         ListaSimple<Cuota> nuevas = GeneradorCuotas.generar(c, fechaFinAnterior, siguiente);
         agregarCuotas(nuevas);
         historial.registrarOperacion("Cuotas de renovacion generadas: contrato " + c.getNumero()
                 + " (" + nuevas.getTamano() + ")");
         return nuevas;
+    }
+
+    private int ultimoNumeroDeCuota(String numeroContrato) {
+        int ultimo = 0;
+        ListaSimple<Cuota> lista = cuotasDe(numeroContrato);
+        for (int i = 0; i < lista.getTamano(); i++) {
+            if (lista.obtener(i).getNumero() > ultimo) ultimo = lista.obtener(i).getNumero();
+        }
+        return ultimo;
     }
 
     private void agregarCuotas(ListaSimple<Cuota> nuevas) {
@@ -146,14 +161,28 @@ public class PagoService {
         return null;
     }
 
-    // Suma de los saldos de las cuotas del contrato (solo renta, sin recargo por mora)
+    // Suma de los saldos de las cuotas de RENTA del contrato (sin la garantia ni el recargo por mora)
     public double deudaPendiente(String numeroContrato) {
         double total = 0;
         ListaSimple<Cuota> lista = cuotasDe(numeroContrato);
         for (int i = 0; i < lista.getTamano(); i++) {
-            total += lista.obtener(i).getSaldo();
+            if (!lista.obtener(i).esGarantia()) total += lista.obtener(i).getSaldo();
         }
         return Math.round(total * 100.0) / 100.0;
+    }
+
+    // Lo que falta pagar de la garantia (0 si no tiene o ya la pago)
+    public double garantiaPendiente(String numeroContrato) {
+        Cuota g = buscarCuota(numeroContrato, Cuota.NUMERO_GARANTIA);
+        return g == null ? 0 : g.getSaldo();
+    }
+
+    // Lo que el inquilino ya entrego como garantia. Los contratos activados antes de que existiera la
+    // cuota 0 no la tienen: se toma la garantia del contrato como entregada.
+    public double garantiaPagada(Contrato c) {
+        Cuota g = buscarCuota(c.getNumero(), Cuota.NUMERO_GARANTIA);
+        if (g == null) return c.getGarantia();
+        return Math.round((g.getMonto() - g.getSaldo()) * 100.0) / 100.0;
     }
 
     public ListaSimple<Cuota> listarCuotas() { return cuotas; }

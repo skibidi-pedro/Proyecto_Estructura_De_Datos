@@ -81,6 +81,9 @@ public class MenuPrincipal extends JFrame {
     private Edificio propiedadActual = null;
 
     private final JToggleButton[] botonesModulos;
+    // Panel ya creado de cada modulo: al volver a abrirlo se muestra el mismo, con su arrendatario,
+    // contrato o fila elegidos, en vez de uno nuevo que empieza desde el primero.
+    private JComponent[] vistasModulos;
     private final JMenu menuModulos = new JMenu("Módulos");
     private final JMenu menuReportes = new JMenu("Reportes");
     private final JMenuItem itemCambiar = new JMenuItem("Cambiar propietario");
@@ -320,7 +323,10 @@ public class MenuPrincipal extends JFrame {
 
     // Habilita o deshabilita modulos y reportes segun haya propiedad elegida (null = ninguna)
     private void ponerPropiedadElegida(Edificio elegida) {
-        if (elegida != propiedadActual) cerrarModulo();   // el modulo abierto era de la otra propiedad
+        if (elegida != propiedadActual) {
+            cerrarModulo();   // el modulo abierto era de la otra propiedad
+            olvidarVistasDePropiedad();
+        }
         propiedadActual = elegida;
         lblPropiedad.setText(elegida != null ? "Elegida: " + elegida.getNombre()
                                              : "Ninguna propiedad seleccionada");
@@ -329,6 +335,16 @@ public class MenuPrincipal extends JFrame {
         }
         menuModulos.setEnabled(elegida != null);
         menuReportes.setEnabled(elegida != null);
+    }
+
+    // Al cambiar de propiedad se descartan los paneles que dependen de ella; Arrendatarios y
+    // Documentos no dependen de la propiedad, asi que conservan lo que estaba elegido.
+    private void olvidarVistasDePropiedad() {
+        if (vistasModulos == null) return;
+        for (int i = 0; i < vistasModulos.length; i++) {
+            String titulo = opciones[i].titulo();
+            if (!titulo.equals("Arrendatarios") && !titulo.equals("Documentos")) vistasModulos[i] = null;
+        }
     }
 
     private JMenuBar crearBarra() {
@@ -388,8 +404,10 @@ public class MenuPrincipal extends JFrame {
         for (int j = 0; j < botonesModulos.length; j++) {
             botonesModulos[j].setSelected(j == indice);
         }
-        vistaModulo.removeAll();   // el modulo anterior (si habia) deja de refrescarse
-        vistaModulo.add(crearVistaModulo(opciones[indice].titulo()), BorderLayout.CENTER);
+        if (vistasModulos == null) vistasModulos = new JComponent[opciones.length];
+        if (vistasModulos[indice] == null) vistasModulos[indice] = crearVistaModulo(opciones[indice].titulo());
+        vistaModulo.removeAll();   // el modulo anterior (si habia) se oculta y deja de refrescarse
+        vistaModulo.add(vistasModulos[indice], BorderLayout.CENTER);
         expandir();
         vistaModulo.revalidate();
         vistaModulo.repaint();

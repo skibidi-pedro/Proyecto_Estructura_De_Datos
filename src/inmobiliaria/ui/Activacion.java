@@ -33,6 +33,24 @@ public class Activacion {
         return pagos.generarCuotas(c);
     }
 
+    // Cuotas de renta de una lista (sin la garantia, que es la cuota 0)
+    public static int mensuales(ListaSimple<Cuota> cuotas) {
+        int n = 0;
+        for (int i = 0; i < cuotas.getTamano(); i++) {
+            if (!cuotas.obtener(i).esGarantia()) n++;
+        }
+        return n;
+    }
+
+    // Texto para el mensaje de contrato activado
+    public static String resumen(Contrato c, ListaSimple<Cuota> cuotas) {
+        String t = "Se generaron " + mensuales(cuotas) + " cuotas mensuales.";
+        if (c.getGarantia() > 0)
+            t += "\nLa garantia (S/ " + Dialogos.dinero(c.getGarantia())
+                    + ") quedo pendiente de cobro como cuota 0 en Cobro de rentas y mora.";
+        return t;
+    }
+
     // Contratos PENDIENTES de un arrendatario (los que esperan su expediente)
     public static ListaSimple<Contrato> pendientesDe(String documentoArrendatario, ContratoService contratos) {
         ListaSimple<Contrato> r = new ListaSimple<>();

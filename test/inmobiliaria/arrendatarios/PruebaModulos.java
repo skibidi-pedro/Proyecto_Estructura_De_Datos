@@ -46,24 +46,22 @@ public class PruebaModulos {
         LocalDate hoy = LocalDate.of(2026, 3, 1);
 
         // ---- Arrendatarios (tabla hash, RN-01) ----
-        arrendatarios.registrar("1001", "Ana Perez", "999", "ana@mail.com", "Luis Perez");
-        arrendatarios.registrar("1002", "Beto Ruiz", "888", "", "");
+        arrendatarios.registrar("1001", "Ana Perez", "999", "ana@mail.com");
+        arrendatarios.registrar("1002", "Beto Ruiz", "888", "");
         verificar("Se busca por documento", arrendatarios.buscar("1001").getNombresCompletos().equals("Ana Perez"));
         verificar("Documento inexistente da null", arrendatarios.buscar("9999") == null);
         verificar("RN-01: documento repetido se rechaza", lanza(() ->
-                arrendatarios.registrar("1001", "Otra Persona", "", "", "")));
+                arrendatarios.registrar("1001", "Otra Persona", "", "")));
         verificar("Documento y nombres obligatorios", lanza(() ->
-                arrendatarios.registrar("1003", " ", "", "", "")));
-        verificar("El aval es un texto opcional", arrendatarios.buscar("1002").getAval().isEmpty()
-                && arrendatarios.buscar("1001").getAval().equals("Luis Perez"));
+                arrendatarios.registrar("1003", " ", "", "")));
         verificar("Listado ordenado por documento", arrendatarios.listar().getTamano() == 2
                 && arrendatarios.listar().obtener(0).getDocumentoIdentidad().equals("1001"));
-        arrendatarios.actualizar("1002", "Beto R. Ruiz", "777", "beto@mail.com", "Rosa Ruiz");
-        verificar("Actualizar cambia los datos y el aval", arrendatarios.buscar("1002").getAval().equals("Rosa Ruiz")
-                && arrendatarios.buscar("1002").getTelefono().equals("777"));
+        arrendatarios.actualizar("1002", "Beto R. Ruiz", "777", "beto@mail.com");
+        verificar("Actualizar cambia los datos", arrendatarios.buscar("1002").getTelefono().equals("777")
+                && arrendatarios.buscar("1002").getCorreo().equals("beto@mail.com"));
         arrendatarios.cambiarEstado("1002", EstadoArrendatario.MOROSO);
         verificar("Cambiar estado", arrendatarios.buscar("1002").getEstado() == EstadoArrendatario.MOROSO);
-        arrendatarios.registrar("1003", "Carla Soto", "", "", "");
+        arrendatarios.registrar("1003", "Carla Soto", "", "");
         arrendatarios.eliminar("1003");
         verificar("Eliminar quita de la tabla hash", arrendatarios.buscar("1003") == null
                 && arrendatarios.listar().getTamano() == 2);
@@ -150,7 +148,7 @@ public class PruebaModulos {
         a2.cargar();
         verificar("CSV: se recargan los 2 arrendatarios", a2.listar().getTamano() == 2);
         Arrendatario ana = a2.buscar("1001");
-        verificar("CSV: se conserva el aval", ana != null && ana.getAval().equals("Luis Perez"));
+        verificar("CSV: se conservan los datos", ana != null && ana.getCorreo().equals("ana@mail.com"));
         verificar("CSV: se conserva el estado", a2.buscar("1002").getEstado() == EstadoArrendatario.MOROSO);
 
         ExpedienteService e2 = new ExpedienteService(new Historial());

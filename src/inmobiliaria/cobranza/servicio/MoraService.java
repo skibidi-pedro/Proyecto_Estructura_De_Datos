@@ -33,9 +33,10 @@ public class MoraService {
     }
 
     // ---------- Por cuota (RN-08) ----------
-    // Dias desde el vencimiento (0 si no vencio o ya esta pagada)
+    // Dias desde el vencimiento (0 si no vencio o ya esta pagada). La garantia (cuota 0) no se
+    // considera atraso: no genera recargo ni vuelve moroso al arrendatario.
     public long diasAtraso(Cuota c, LocalDate hoy) {
-        if (c.estaPagada() || !hoy.isAfter(c.getVencimiento())) return 0;
+        if (c.esGarantia() || c.estaPagada() || !hoy.isAfter(c.getVencimiento())) return 0;
         return Fechas.calcularDiasDiferencia(c.getVencimiento(), hoy);
     }
 

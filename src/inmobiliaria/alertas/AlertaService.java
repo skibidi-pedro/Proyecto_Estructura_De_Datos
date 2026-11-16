@@ -69,7 +69,8 @@ public class AlertaService {
             Cuota c = todas.obtener(i);
             long faltan = Fechas.calcularDiasDiferencia(hoy, c.getVencimiento());
             if (!c.estaPagada() && faltan >= 0 && faltan <= DIAS_AVISO_PAGO) {
-                alertas.agregar("Contrato " + c.getNumeroContrato() + " cuota " + c.getNumero()
+                alertas.agregar("Contrato " + c.getNumeroContrato()
+                        + (c.esGarantia() ? " garantia" : " cuota " + c.getNumero())
                         + ": S/ " + c.getSaldo() + " vence "
                         + (faltan == 0 ? "hoy" : "en " + faltan + " dias"));
             }

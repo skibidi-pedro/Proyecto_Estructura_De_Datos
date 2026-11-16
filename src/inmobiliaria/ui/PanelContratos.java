@@ -211,7 +211,7 @@ public class PanelContratos extends JPanel {
         ListaSimple<Cuota> cuotas = Activacion.activar(c, contratos, propiedades, pagos, expedientes);
         refrescar();
         Dialogos.info(this, "Contrato", "Contrato de " + c.getDocumentoArrendatario() + " activado.\n"
-                + "Se generaron " + cuotas.getTamano() + " cuotas mensuales.");
+                + Activacion.resumen(c, cuotas));
     }
 
     // ---------- Renovar (RN-12) + cuotas del periodo nuevo ----------
@@ -230,7 +230,7 @@ public class PanelContratos extends JPanel {
         ListaSimple<Cuota> nuevas = pagos.generarCuotasRenovacion(c, finAnterior);
         refrescar();
         Dialogos.info(this, "Contrato", "Contrato de " + c.getDocumentoArrendatario() + " renovado.\n"
-                + "Se generaron " + nuevas.getTamano() + " cuotas nuevas.");
+                + "Se generaron " + Activacion.mensuales(nuevas) + " cuotas nuevas.");
     }
 
     // ---------- Finalizar (RN-03, RN-13): liquida la garantia y libera la unidad ----------
@@ -239,13 +239,14 @@ public class PanelContratos extends JPanel {
         JTextField danos = Dialogos.texto("0");
         double deuda = pagos.deudaPendiente(c.getNumero());
         double recargo = mora.totalMora(c.getNumero(), hoy());
+        double garantiaPagada = pagos.garantiaPagada(c);   // lo realmente entregado (cuota 0)
         if (!Dialogos.formulario(this, "Finalizar contrato de " + c.getDocumentoArrendatario(),
-                new String[] { "Garantia (S/)", "Renta adeudada (S/)", "Recargo por mora (S/)", "Danos a descontar (S/)" },
-                new JComponent[] { solo(Dialogos.dinero(c.getGarantia())), solo(Dialogos.dinero(deuda)),
+                new String[] { "Garantia pagada (S/)", "Renta adeudada (S/)", "Recargo por mora (S/)", "Danos a descontar (S/)" },
+                new JComponent[] { solo(Dialogos.dinero(garantiaPagada)), solo(Dialogos.dinero(deuda)),
                         solo(Dialogos.dinero(recargo)), danos })) return;
 
         LiquidacionGarantia liq = contratos.finalizar(c.getNumero(), deuda, recargo,
-                Dialogos.numero(danos, "Danos"));
+                Dialogos.numero(danos, "Danos"), garantiaPagada);
         propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.DISPONIBLE);
         refrescar();
         Dialogos.info(this, "Liquidacion de garantia", liq.toString());

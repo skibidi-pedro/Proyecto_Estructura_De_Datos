@@ -32,7 +32,8 @@ import inmobiliaria.propiedades.modelo.Unidad;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 
 /**
- * Cobro de rentas y mora (2.5) de la propiedad seleccionada: cuotas de un contrato,
+ * Cobro de rentas y mora (2.5) de la propiedad seleccionada: cuotas de un contrato (la primera fila,
+ * "Garantia", es la cuota 0: el deposito que se cobra al empezar el contrato),
  * pagos totales o parciales, recibos, dias de atraso, recargo y si el arrendatario es moroso.
  * Usa PagoService y MoraService (Integrante 4).
  * Es un panel que MenuPrincipal muestra a la derecha de la ventana, con refresco automatico cada segundo;
@@ -47,7 +48,7 @@ public class PanelCobranza extends JPanel {
 
     private final JComboBox<Contrato> comboContratos = new JComboBox<>();
     private final DefaultTableModel modelo = Dialogos.modelo(
-            "Cuota", "Vencimiento", "Monto (S/)", "Saldo (S/)", "Atraso (dias)", "Estado", "Recargo (S/)");
+            "Concepto", "Vencimiento", "Monto (S/)", "Saldo (S/)", "Atraso (dias)", "Estado", "Recargo (S/)");
     private final JTable tabla = Dialogos.tabla(modelo);
     private final JLabel resumen = new JLabel(" ");
     private boolean ajustandoCombo = false;   // evita refrescar dos veces al reconstruir el combo
@@ -142,13 +143,23 @@ public class PanelCobranza extends JPanel {
 
     // Recibo sin codigo: fecha, cuota, pagado y saldo
     private String textoRecibo(Recibo r) {
-        return Fechas.convertirAString(r.getFecha()) + " | cuota " + r.getNumeroCuota()
+        return Fechas.convertirAString(r.getFecha()) + " | " + concepto(r.getNumeroCuota())
                 + " | pagado S/ " + Dialogos.dinero(r.getMontoPagado())
                 + " | saldo de la cuota S/ " + Dialogos.dinero(r.getSaldoCuota())
                 + (r.getComprobante().isEmpty() ? "" : " | comprobante " + Archivos.nombre(r.getComprobante()));
     }
 
+    // La cuota 0 es la garantia
+    private String concepto(int numeroCuota) {
+        return numeroCuota == Cuota.NUMERO_GARANTIA ? "garantia" : "cuota " + numeroCuota;
+    }
+
+    private Object etiqueta(int numeroCuota) {
+        return numeroCuota == Cuota.NUMERO_GARANTIA ? "Garantia" : (Object) numeroCuota;
+    }
+
     private String estado(Cuota c) {
+        if (c.esGarantia()) return c.estaPagada() ? "Pagada" : "Pendiente";
         LocalDate hoy = hoy();
         if (c.estaPagada()) return "Pagada";
         if (mora.enMora(c, hoy)) return "EN MORA";
@@ -167,13 +178,15 @@ public class PanelCobranza extends JPanel {
         ListaSimple<Cuota> cuotas = pagos.cuotasDe(c.getNumero());
         for (int i = 0; i < cuotas.getTamano(); i++) {
             Cuota q = cuotas.obtener(i);
-            filas.add(new Object[] { q.getNumero(), Fechas.convertirAString(q.getVencimiento()),
+            filas.add(new Object[] { etiqueta(q.getNumero()), Fechas.convertirAString(q.getVencimiento()),
                     Dialogos.dinero(q.getMonto()), Dialogos.dinero(q.getSaldo()),
                     mora.diasAtraso(q, hoy()), estado(q), Dialogos.dinero(mora.recargo(q, hoy())) });
         }
         Dialogos.poblar(tabla, modelo, filas);
         boolean moroso = mora.esMoroso(c.getDocumentoArrendatario(), contratos.listar(), hoy());
+        double garantiaPendiente = pagos.garantiaPendiente(c.getNumero());
         resumen.setText("Deuda de renta: S/ " + Dialogos.dinero(pagos.deudaPendiente(c.getNumero()))
+                + (garantiaPendiente > 0 ? "   |   Garantia pendiente: S/ " + Dialogos.dinero(garantiaPendiente) : "")
                 + "   |   Recargo por mora: S/ " + Dialogos.dinero(mora.totalMora(c.getNumero(), hoy()))
                 + "   |   Arrendatario " + c.getDocumentoArrendatario() + (moroso ? ": MOROSO" : ": al dia")
                 + "   |   Gracia: " + MoraService.DIAS_GRACIA + " dias, recargo " + MoraService.PORCENTAJE_RECARGO + "%");
@@ -184,19 +197,19 @@ public class PanelCobranza extends JPanel {
         Contrato c = (Contrato) comboContratos.getSelectedItem();
         Object numero = Dialogos.seleccionado(tabla, 0);
         if (c == null || numero == null) {
-            Dialogos.error(this, "Seleccione una cuota de la tabla.");
+            Dialogos.error(this, "Seleccione una cuota (o la garantia) de la tabla.");
             return;
         }
-        Cuota cuota = pagos.buscarCuota(c.getNumero(), (Integer) numero);
+        Cuota cuota = pagos.buscarCuota(c.getNumero(), numero instanceof Integer n ? n : Cuota.NUMERO_GARANTIA);
         if (cuota.estaPagada()) {
-            Dialogos.error(this, "La cuota " + cuota.getNumero() + " ya esta pagada.");
+            Dialogos.error(this, (cuota.esGarantia() ? "La garantia" : "La cuota " + cuota.getNumero()) + " ya esta pagada.");
             return;
         }
         JTextField monto = Dialogos.texto(Dialogos.dinero(cuota.getSaldo()));
         JTextField fecha = Dialogos.texto(Fechas.convertirAString(hoy()));
         JTextField comprobante = Dialogos.texto("");
-        if (!Dialogos.formulario(this, "Pago de la cuota " + cuota.getNumero(),
-                new String[] { "Saldo de la cuota (S/)", "Monto a pagar (S/)", "Fecha (AAAA-MM-DD)",
+        if (!Dialogos.formulario(this, cuota.esGarantia() ? "Pago de la garantia" : "Pago de la cuota " + cuota.getNumero(),
+                new String[] { cuota.esGarantia() ? "Saldo de la garantia (S/)" : "Saldo de la cuota (S/)", "Monto a pagar (S/)", "Fecha (AAAA-MM-DD)",
                         "Comprobante (foto o PDF, opcional)" },
                 new JComponent[] { soloLectura(Dialogos.dinero(cuota.getSaldo())), monto, fecha,
                         Dialogos.campoArchivo(this, comprobante) })) return;
@@ -226,7 +239,7 @@ public class PanelCobranza extends JPanel {
             Dialogos.error(this, "No hay un contrato seleccionado.");
             return;
         }
-        DefaultTableModel modeloRecibos = Dialogos.modelo("Numero", "Fecha", "Cuota", "Pagado (S/)",
+        DefaultTableModel modeloRecibos = Dialogos.modelo("Numero", "Fecha", "Concepto", "Pagado (S/)",
                 "Saldo de la cuota (S/)", "Comprobante");
         JTable tablaRecibos = Dialogos.tabla(modeloRecibos);
         Dialogos.ocultarColumna(tablaRecibos, 0);
@@ -237,7 +250,7 @@ public class PanelCobranza extends JPanel {
                 Recibo r = todos.obtener(i);
                 if (!r.getNumeroContrato().equals(c.getNumero())) continue;
                 modeloRecibos.addRow(new Object[] { r.getNumero(), Fechas.convertirAString(r.getFecha()),
-                        r.getNumeroCuota(), Dialogos.dinero(r.getMontoPagado()),
+                        etiqueta(r.getNumeroCuota()), Dialogos.dinero(r.getMontoPagado()),
                         Dialogos.dinero(r.getSaldoCuota()),
                         r.getComprobante().isEmpty() ? "-" : Archivos.nombre(r.getComprobante()) });
             }
