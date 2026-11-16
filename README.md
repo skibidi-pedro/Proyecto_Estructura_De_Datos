@@ -69,7 +69,13 @@ de la ventana. El menu Reportes muestra Ingresos, Morosidad, Ocupacion y Alertas
   advierte y el contrato queda resaltado en amarillo hasta que se anexen.
 - **Estado del arrendatario (automatico):** MOROSO si tiene cuotas en mora, ACTIVO si tiene un contrato pendiente o vigente,
   INACTIVO si no tiene contratos o todos estan finalizados. Ya no se cambia a mano.
-- **Cobro de rentas y mora:** el boton Eliminar quita la cuota (o la garantia) elegida si no tiene pagos.
+- **Cobro de rentas y mora:** el boton Eliminar borra todo el registro de cuotas del contrato elegido,
+  con sus pagos y recibos (pide confirmacion).
+- **Busqueda y filtros:** Unidades y Contratos tienen un campo Buscar (en Contratos tambien por nombre del
+  arrendatario) y Cobro tiene un filtro de cuotas por estado.
+- **Historial de operaciones:** menu a la derecha de Reportes; la operacion mas reciente va primero, se guarda
+  en `data/historial.csv` y se puede buscar.
+- **Exportar reportes:** Ingresos, Morosidad y Ocupacion tienen el boton Exportar CSV (separador `;`, abre en Excel).
 - **Estados de unidad:** `NO ALQUILADA` y `ALQUILADA` (cambian solos al activar o finalizar un contrato).
 - **Colores en las tablas:**
   - Archivo (documento de identidad / del contrato): verde si esta, amarillo si falta.

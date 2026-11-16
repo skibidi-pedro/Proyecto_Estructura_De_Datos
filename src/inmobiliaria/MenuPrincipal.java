@@ -4,7 +4,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import javax.swing.table.DefaultTableModel;
 import inmobiliaria.alertas.AlertaService;
 import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
 import inmobiliaria.cobranza.servicio.MoraService;
@@ -12,6 +19,8 @@ import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.documentos.servicio.ExpedienteService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
+import inmobiliaria.nucleo.historial.Historial;
+import inmobiliaria.nucleo.historial.Operacion;
 import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.nucleo.util.GeneradorCodigo;
 import inmobiliaria.propiedades.modelo.Edificio;
@@ -64,6 +73,7 @@ public class MenuPrincipal extends JFrame {
     private final ArrendatarioService arrendatarios;
     private final ExpedienteService expedientes;
     private final ReporteService reporteService;
+    private final Historial historial;
     private final AlertaService alertaService;
 
     private final DefaultComboBoxModel<Propietario> modeloPropietarios = new DefaultComboBoxModel<>();
@@ -100,7 +110,7 @@ public class MenuPrincipal extends JFrame {
     public MenuPrincipal(PropiedadService propiedades, ContratoService contratos,
                          PagoService pagos, MoraService mora, ArrendatarioService arrendatarios,
                          ExpedienteService expedientes,
-                         ReporteService reporteService, AlertaService alertaService) {
+                         ReporteService reporteService, AlertaService alertaService, Historial historial) {
         super("Gestión Inmobiliaria - Grupo 6");
         this.propiedades = propiedades;
         this.contratos = contratos;
@@ -109,6 +119,7 @@ public class MenuPrincipal extends JFrame {
         this.arrendatarios = arrendatarios;
         this.expedientes = expedientes;
         this.reporteService = reporteService;
+        this.historial = historial;
         this.alertaService = alertaService;
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -371,6 +382,13 @@ public class MenuPrincipal extends JFrame {
             menuReportes.add(item);
         }
         barra.add(menuReportes);
+
+        // Historial de operaciones: a la derecha de Reportes
+        JMenu menuHistorial = new JMenu("Historial");
+        JMenuItem verHistorial = new JMenuItem("Ver historial de operaciones");
+        verHistorial.addActionListener(e -> mostrarHistorial());
+        menuHistorial.add(verHistorial);
+        barra.add(menuHistorial);
         return barra;
     }
 
@@ -380,6 +398,7 @@ public class MenuPrincipal extends JFrame {
         pagos.guardar();
         arrendatarios.guardar();
         expedientes.guardar();
+        historial.guardar();
     }
 
     // ---------- Modulos: toggle, uno a la vez, se muestran a la derecha ----------
@@ -463,6 +482,7 @@ public class MenuPrincipal extends JFrame {
         try {
             LocalDate hoy = LocalDate.now();
             String texto;
+            String csv = null;   // el reporte de alertas no se exporta
             switch (reporte) {
                 case "Ingresos" -> {
                     JTextField desde = Dialogos.texto(Fechas.convertirAString(hoy.withDayOfMonth(1)));
@@ -475,12 +495,19 @@ public class MenuPrincipal extends JFrame {
                     if (h.isBefore(d))
                         throw new IllegalArgumentException("La fecha final no puede ser anterior a la inicial");
                     texto = reporteService.reporteIngresos(d, h);
+                    csv = reporteService.csvIngresos(d, h);
                 }
-                case "Morosidad" -> texto = reporteService.reporteMorosidad(hoy);
-                case "Ocupación" -> texto = reporteService.reporteOcupacion();
+                case "Morosidad" -> {
+                    texto = reporteService.reporteMorosidad(hoy);
+                    csv = reporteService.csvMorosidad(hoy);
+                }
+                case "Ocupación" -> {
+                    texto = reporteService.reporteOcupacion();
+                    csv = reporteService.csvOcupacion();
+                }
                 default -> texto = textoAlertas(hoy);
             }
-            mostrarTexto(reporte, texto);
+            mostrarTexto(reporte, texto, csv);
         } catch (IllegalArgumentException ex) {
             Dialogos.error(this, ex.getMessage());
         }
@@ -497,12 +524,58 @@ public class MenuPrincipal extends JFrame {
         return sb.toString();
     }
 
-    private void mostrarTexto(String titulo, String texto) {
+    // Muestra el reporte; si tiene version CSV ofrece exportarla
+    private void mostrarTexto(String titulo, String texto, String csv) {
         JTextArea area = new JTextArea(texto, 16, 60);
         area.setEditable(false);
         area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         area.setCaretPosition(0);
-        JOptionPane.showMessageDialog(this, new JScrollPane(area), titulo, JOptionPane.PLAIN_MESSAGE);
+        if (csv == null) {
+            JOptionPane.showMessageDialog(this, new JScrollPane(area), titulo, JOptionPane.PLAIN_MESSAGE);
+            return;
+        }
+        int r = JOptionPane.showOptionDialog(this, new JScrollPane(area), titulo, JOptionPane.DEFAULT_OPTION,
+                JOptionPane.PLAIN_MESSAGE, null, new String[] { "Exportar CSV", "Cerrar" }, "Cerrar");
+        if (r == 0) exportarCsv(titulo, csv);
+    }
+
+    // Guarda el reporte en un .csv (UTF-8 con marca BOM para que Excel respete los acentos)
+    private void exportarCsv(String reporte, String csv) {
+        JFileChooser fc = new JFileChooser();
+        fc.setFileFilter(new FileNameExtensionFilter("CSV (*.csv)", "csv"));
+        fc.setSelectedFile(new File("reporte-" + reporte.toLowerCase().replace("ó", "o") + ".csv"));
+        if (fc.showSaveDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        File f = fc.getSelectedFile();
+        if (!f.getName().toLowerCase().endsWith(".csv")) f = new File(f.getPath() + ".csv");
+        if (f.exists() && !Dialogos.confirmar(this, "Exportar", "El archivo ya existe. Reemplazarlo?")) return;
+        try {
+            Files.write(f.toPath(), ("\uFEFF" + csv).getBytes(StandardCharsets.UTF_8));
+            Dialogos.info(this, "Exportar", "Reporte guardado en " + f.getName());
+        } catch (IOException ex) {
+            Dialogos.error(this, "No se pudo guardar el archivo: " + ex.getMessage());
+        }
+    }
+
+    // ---------- Historial de operaciones (la mas reciente primero) ----------
+    private void mostrarHistorial() {
+        ListaSimple<Operacion> ops = historial.listar();
+        if (ops.estaVacia()) {
+            Dialogos.info(this, "Historial de operaciones", "Todavia no hay operaciones registradas.");
+            return;
+        }
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        DefaultTableModel modelo = Dialogos.modelo("Fecha", "Operacion");
+        for (int i = 0; i < ops.getTamano(); i++)
+            modelo.addRow(new Object[] { formato.format(ops.obtener(i).getFechaHora()), ops.obtener(i).getDescripcion() });
+        JTable tabla = Dialogos.tabla(modelo);
+        tabla.getColumnModel().getColumn(0).setPreferredWidth(150);
+        tabla.getColumnModel().getColumn(1).setPreferredWidth(550);
+        JPanel panel = new JPanel(new BorderLayout(4, 4));
+        panel.add(Dialogos.barraBusqueda(ops.getTamano() + " operaciones", tabla, null), BorderLayout.NORTH);
+        JScrollPane scroll = new JScrollPane(tabla);
+        scroll.setPreferredSize(new Dimension(720, 360));
+        panel.add(scroll, BorderLayout.CENTER);
+        JOptionPane.showMessageDialog(this, panel, "Historial de operaciones", JOptionPane.PLAIN_MESSAGE);
     }
 
     private void salir() {

@@ -77,7 +77,9 @@ public class PanelContratos extends JPanel {
         this.edificio = edificio;
 
         setLayout(new BorderLayout(8, 8));
-        add(new JLabel("  Propiedad: " + edificio), BorderLayout.NORTH);
+        // La busqueda tambien encuentra por nombre del arrendatario (la tabla muestra su documento)
+        add(Dialogos.barraBusqueda("  Propiedad: " + edificio, tabla,
+                fila -> nombreDe(String.valueOf(modelo.getValueAt(fila, 2)))), BorderLayout.NORTH);
         Dialogos.ocultarColumna(tabla, 0);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
         Dialogos.alDobleClick(tabla, () -> ejecutar(this::abrirDocumento));

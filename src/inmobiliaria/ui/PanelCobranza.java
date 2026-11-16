@@ -50,6 +50,8 @@ public class PanelCobranza extends JPanel {
     private final DefaultTableModel modelo = Dialogos.modelo(
             "Concepto", "Vencimiento", "Monto (S/)", "Saldo (S/)", "Atraso (dias)", "Estado", "Recargo (S/)");
     private final JTable tabla = Dialogos.tabla(modelo);
+    private final JComboBox<String> filtroEstado = new JComboBox<>(
+            new String[] { "Todos", "Garantia", "Pendiente", "Vencida", "EN MORA", "Pagada" });
     private final JLabel resumen = new JLabel(" ");
     private boolean ajustandoCombo = false;   // evita refrescar dos veces al reconstruir el combo
 
@@ -67,6 +69,9 @@ public class PanelCobranza extends JPanel {
         norte.add(new JLabel("Contrato:"));
         Dialogos.mostrarComo(comboContratos, c -> c.getDocumentoArrendatario() + " - " + direccionDe(c.getCodigoUnidad()));
         norte.add(comboContratos);
+        norte.add(new JLabel("   Estado:"));
+        norte.add(filtroEstado);
+        filtroEstado.addActionListener(e -> filtrarPorEstado());
         add(norte, BorderLayout.NORTH);
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
@@ -96,7 +101,7 @@ public class PanelCobranza extends JPanel {
         botones.add(pagar);
         botones.add(verRecibos);
         JButton eliminar = new JButton("Eliminar");
-        eliminar.addActionListener(e -> eliminarCuota());
+        eliminar.addActionListener(e -> eliminarCuotas());
         botones.add(eliminar);
         add(botones, BorderLayout.SOUTH);
 
@@ -208,24 +213,31 @@ public class PanelCobranza extends JPanel {
     }
 
     // ---------- Registrar pago total o parcial y emitir recibo (RN-09, RN-10) ----------
-    // Elimina la cuota (o la garantia) elegida, solo si no tiene pagos
-    private void eliminarCuota() {
+    // Elimina todo el registro de cuotas del contrato elegido (con sus pagos y recibos)
+    private void eliminarCuotas() {
         Contrato c = (Contrato) comboContratos.getSelectedItem();
-        Object numero = Dialogos.seleccionado(tabla, 0);
-        if (c == null || numero == null) {
-            Dialogos.error(this, "Seleccione una cuota o la garantia de la tabla.");
+        if (c == null) {
+            Dialogos.error(this, "No hay un contrato elegido.");
             return;
         }
-        int n = numero instanceof Integer i ? i : Cuota.NUMERO_GARANTIA;
-        String que = n == Cuota.NUMERO_GARANTIA ? "la garantia" : "la cuota " + n;
-        if (!Dialogos.confirmar(this, "Eliminar", "Eliminar " + que + "?")) return;
-        try {
-            pagos.eliminarCuota(c.getNumero(), n);
-        } catch (IllegalArgumentException ex) {
-            Dialogos.error(this, ex.getMessage());
+        int cantidad = pagos.cuotasDe(c.getNumero()).getTamano();
+        if (cantidad == 0) {
+            Dialogos.error(this, "El contrato no tiene cuotas.");
             return;
         }
+        if (!Dialogos.confirmar(this, "Eliminar cuotas", "Se eliminaran las " + cantidad
+                + " cuotas del contrato de " + c.getDocumentoArrendatario()
+                + ", con todos sus pagos y recibos.\nEsta accion no se puede deshacer. Continuar?")) return;
+        pagos.eliminarCuotas(c.getNumero());
         refrescar();
+    }
+
+    // Muestra solo las cuotas del estado elegido
+    private void filtrarPorEstado() {
+        String f = (String) filtroEstado.getSelectedItem();
+        Dialogos.filtrar(tabla, fila -> f.equals("Todos")
+                || (f.equals("Garantia") ? "Garantia".equals(modelo.getValueAt(fila, 0))
+                                         : String.valueOf(modelo.getValueAt(fila, 5)).startsWith(f)));
     }
 
     private void registrarPago() {

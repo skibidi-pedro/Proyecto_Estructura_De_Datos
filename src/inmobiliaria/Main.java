@@ -14,7 +14,7 @@ import inmobiliaria.reportes.ReporteService;
 
 /**
  * Punto de entrada. Crea los servicios, carga los CSV (2.8) y arranca el menu Swing.
- * Los servicios siguen compartiendo el Historial (el menu ya no lo muestra: refinamiento posterior).
+ * Los servicios comparten el Historial, que se ve en el menu Historial.
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
@@ -31,6 +31,7 @@ public class Main {
         AlertaService alertas = new AlertaService(contratos, pagos, mora);
 
         try {
+            historial.cargar();
             propiedades.cargar();
             contratos.cargar();
             pagos.cargar();
@@ -46,6 +47,6 @@ public class Main {
 
         SwingUtilities.invokeLater(() ->
             new MenuPrincipal(propiedades, contratos, pagos, mora, arrendatarios, expedientes,
-                    reportes, alertas).setVisible(true));
+                    reportes, alertas, historial).setVisible(true));
     }
 }

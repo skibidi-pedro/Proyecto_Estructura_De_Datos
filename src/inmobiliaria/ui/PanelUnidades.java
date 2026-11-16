@@ -40,7 +40,7 @@ public class PanelUnidades extends JPanel {
         this.edificio = edificio;
 
         setLayout(new BorderLayout(8, 8));
-        add(new JLabel("  Propiedad: " + edificio), BorderLayout.NORTH);
+        add(Dialogos.barraBusqueda("  Propiedad: " + edificio, tabla, null), BorderLayout.NORTH);
         Dialogos.ocultarColumna(tabla, 0);
         // NO ALQUILADA en naranja, ALQUILADA en verde claro
         Dialogos.colorear(tabla, (fila, col) -> col != 4 ? null

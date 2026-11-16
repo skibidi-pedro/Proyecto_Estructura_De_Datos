@@ -193,11 +193,10 @@ public class PruebaCobranza {
         verificar("Sin contratos queda INACTIVO",
                 ars.buscar("DNI8").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.INACTIVO);
         p2.registrarPago("D1", 1, 800, LocalDate.now());
-        verificar("No se elimina una cuota con pagos", lanza(() -> p2.eliminarCuota("D1", 1)));
-        p2.eliminarCuota("D1", 0);
-        verificar("Eliminar la garantia sin pagos la quita", p2.buscarCuota("D1", 0) == null);
-        for (int n = 2; n <= 3; n++) p2.eliminarCuota("D1", n);
-        verificar("Solo queda la cuota pagada y deja de ser moroso", p2.cuotasDe("D1").getTamano() == 1);
+        verificar("Eliminar borra todas las cuotas del contrato (garantia y 3 mensuales)", p2.eliminarCuotas("D1") == 4);
+        verificar("Tambien borra sus pagos y recibos", p2.cuotasDe("D1").estaVacia()
+                && p2.pagosDe("D1").estaVacia() && p2.listarRecibos().estaVacia());
+        verificar("Un contrato sin cuotas no se puede vaciar otra vez", lanza(() -> p2.eliminarCuotas("D1")));
         inmobiliaria.ui.Activacion.sincronizarEstados(ars, k2, m2);
         verificar("Sin mora y con contrato vigente vuelve a ACTIVO",
                 ars.buscar("DNI9").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.ACTIVO);
@@ -205,6 +204,28 @@ public class PruebaCobranza {
         inmobiliaria.ui.Activacion.sincronizarEstados(ars, k2, m2);
         verificar("Con todos sus contratos finalizados queda INACTIVO",
                 ars.buscar("DNI9").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.INACTIVO);
+
+        // ---- Historial (pila) y su persistencia ----
+        Historial hist = new Historial();
+        hist.registrarOperacion("Primera");
+        hist.registrarOperacion("Segunda; con punto y coma");
+        verificar("El historial lista la mas reciente primero y no pierde operaciones",
+                hist.listar().obtener(0).getDescripcion().startsWith("Segunda") && hist.getCantidadOperaciones() == 2);
+        hist.guardar();
+        Historial hist2 = new Historial();
+        hist2.cargar();
+        verificar("El historial se recarga en el mismo orden", hist2.getCantidadOperaciones() == 2
+                && hist2.listar().obtener(0).getDescripcion().equals("Segunda, con punto y coma")
+                && hist2.listar().obtener(1).getDescripcion().equals("Primera"));
+
+        // ---- Exportar reportes a CSV ----
+        String csvIng = reportes.csvIngresos(LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31));
+        verificar("CSV de ingresos: encabezado y total", csvIng.startsWith("Contrato;Arrendatario;Pagos;Monto (S/)\n")
+                && csvIng.contains("\nTOTAL;"));
+        verificar("CSV de morosidad: encabezado y total", reportes.csvMorosidad(LocalDate.of(2026, 3, 20))
+                .startsWith("Arrendatario;Contrato;Unidad;Deuda (S/);Recargo (S/)\n"));
+        String csvOc = reportes.csvOcupacion();
+        verificar("CSV de ocupacion", csvOc.startsWith("Concepto;Valor\n") && csvOc.contains("\nOcupacion (%);"));
 
         System.out.println(fallos == 0 ? "\nTodas las pruebas pasaron." : "\nFallaron " + fallos + " pruebas.");
         if (fallos > 0) System.exit(1);

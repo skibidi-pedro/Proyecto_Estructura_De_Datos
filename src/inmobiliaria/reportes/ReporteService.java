@@ -139,4 +139,82 @@ public class ReporteService {
                 + "  No alquiladas: " + (total - alquiladas) + "\n"
                 + String.format(Locale.US, "OCUPACION: %.1f%%", porcentaje);
     }
+
+    // ---------- Exportar a CSV (separador ';', se abre en Excel) ----------
+    private static String celda(Object valor) {
+        String t = String.valueOf(valor);
+        return t.contains(";") || t.contains("\"") || t.contains("\n") ? "\"" + t.replace("\"", "\"\"") + "\"" : t;
+    }
+
+    private static String fila(Object... valores) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < valores.length; i++) {
+            if (i > 0) sb.append(';');
+            sb.append(celda(valores[i]));
+        }
+        return sb.append('\n').toString();
+    }
+
+    private static String monto(double valor) {
+        return String.format(Locale.US, "%.2f", valor);
+    }
+
+    public String csvIngresos(LocalDate desde, LocalDate hasta) {
+        StringBuilder sb = new StringBuilder(fila("Contrato", "Arrendatario", "Pagos", "Monto (S/)"));
+        int cantidad = 0;
+        ListaSimple<Contrato> lista = contratos.listar();
+        for (int i = 0; i < lista.getTamano(); i++) {
+            Contrato c = lista.obtener(i);
+            double subtotal = 0;
+            int n = 0;
+            ListaSimple<Pago> delContrato = pagos.pagosDe(c.getNumero());
+            for (int j = 0; j < delContrato.getTamano(); j++) {
+                Pago p = delContrato.obtener(j);
+                if (p.getNumeroCuota() == Cuota.NUMERO_GARANTIA) continue;
+                if (!p.getFecha().isBefore(desde) && !p.getFecha().isAfter(hasta)) {
+                    subtotal += p.getMonto();
+                    n++;
+                }
+            }
+            if (n > 0) {
+                sb.append(fila(c.getNumero(), c.getDocumentoArrendatario(), n, monto(subtotal)));
+                cantidad += n;
+            }
+        }
+        sb.append(fila("TOTAL", "", cantidad, monto(totalIngresos(desde, hasta))));
+        double garantias = garantiasRecibidas(desde, hasta);
+        if (garantias > 0) sb.append(fila("Garantias recibidas (no son ingreso)", "", "", monto(garantias)));
+        return sb.toString();
+    }
+
+    public String csvMorosidad(LocalDate hoy) {
+        StringBuilder sb = new StringBuilder(fila("Arrendatario", "Contrato", "Unidad", "Deuda (S/)", "Recargo (S/)"));
+        double totalDeuda = 0, totalMora = 0;
+        int morosos = 0;
+        ListaSimple<Contrato> lista = contratos.listar();
+        for (int i = 0; i < lista.getTamano(); i++) {
+            Contrato c = lista.obtener(i);
+            if (!mora.contratoEnMora(c.getNumero(), hoy)) continue;
+            double deuda = pagos.deudaPendiente(c.getNumero());
+            double recargo = mora.totalMora(c.getNumero(), hoy);
+            sb.append(fila(c.getDocumentoArrendatario(), c.getNumero(), c.getCodigoUnidad(), monto(deuda), monto(recargo)));
+            totalDeuda += deuda;
+            totalMora += recargo;
+            morosos++;
+        }
+        sb.append(fila("TOTAL", morosos + " contratos", "", monto(totalDeuda), monto(totalMora)));
+        return sb.toString();
+    }
+
+    public String csvOcupacion() {
+        int alquiladas = 0;
+        ListaSimple<Unidad> lista = propiedades.listarUnidades();
+        for (int i = 0; i < lista.getTamano(); i++) {
+            if (lista.obtener(i).getEstado() == EstadoUnidad.ALQUILADA) alquiladas++;
+        }
+        int total = lista.getTamano();
+        return fila("Concepto", "Valor") + fila("Unidades", total) + fila("Alquiladas", alquiladas)
+                + fila("No alquiladas", total - alquiladas)
+                + fila("Ocupacion (%)", String.format(Locale.US, "%.1f", total == 0 ? 0 : alquiladas * 100.0 / total));
+    }
 }

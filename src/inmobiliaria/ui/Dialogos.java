@@ -11,6 +11,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
+import javax.swing.RowFilter;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.TableModel;
+import javax.swing.table.TableRowSorter;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -149,6 +155,59 @@ public class Dialogos {
         return t;
     }
 
+    // ---------- Busqueda y filtros ----------
+    // Deja visibles solo las filas (indice del MODELO) para las que 'visible' da true.
+    // Instala el ordenador de la tabla la primera vez: asi tambien se puede ordenar por columna.
+    @SuppressWarnings("unchecked")
+    public static void filtrar(JTable tabla, Predicate<Integer> visible) {
+        TableRowSorter<TableModel> sorter;
+        if (tabla.getRowSorter() == null) {
+            sorter = new TableRowSorter<>(tabla.getModel());
+            tabla.setRowSorter(sorter);
+        } else {
+            sorter = (TableRowSorter<TableModel>) tabla.getRowSorter();
+        }
+        sorter.setRowFilter(new RowFilter<TableModel, Integer>() {
+            @Override
+            public boolean include(Entry<? extends TableModel, ? extends Integer> entrada) {
+                return visible.test(entrada.getIdentifier());
+            }
+        });
+    }
+
+    // Campo de busqueda: filtra mientras se escribe, sin distinguir mayusculas, en las columnas
+    // visibles y, si se da, en un texto extra de la fila (p. ej. el nombre del arrendatario).
+    public static JTextField campoBusqueda(JTable tabla, Function<Integer, String> extra) {
+        JTextField campo = new JTextField(14);
+        Runnable aplicar = () -> {
+            String q = campo.getText().trim().toLowerCase(Locale.ROOT);
+            filtrar(tabla, fila -> {
+                if (q.isEmpty()) return true;
+                TableModel m = tabla.getModel();
+                for (int vc = 0; vc < tabla.getColumnCount(); vc++) {
+                    Object v = m.getValueAt(fila, tabla.convertColumnIndexToModel(vc));
+                    if (String.valueOf(v).toLowerCase(Locale.ROOT).contains(q)) return true;
+                }
+                return extra != null && extra.apply(fila).toLowerCase(Locale.ROOT).contains(q);
+            });
+        };
+        campo.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { aplicar.run(); }
+            @Override public void removeUpdate(DocumentEvent e) { aplicar.run(); }
+            @Override public void changedUpdate(DocumentEvent e) { aplicar.run(); }
+        });
+        return campo;
+    }
+
+    // Barra con "Buscar:" y su campo, lista para ponerla arriba de una tabla
+    public static JPanel barraBusqueda(String titulo, JTable tabla, Function<Integer, String> extra) {
+        JPanel barra = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+        barra.add(new JLabel(titulo));
+        barra.add(new JLabel("   Buscar:"));
+        barra.add(campoBusqueda(tabla, extra));
+        return barra;
+    }
+
     // Valor de la fila seleccionada en la columna del MODELO (sirve aunque la columna este oculta), o null
     public static Object seleccionado(JTable tabla, int columna) {
         int fila = tabla.getSelectedRow();
@@ -176,7 +235,11 @@ public class Dialogos {
         for (Object[] f : filas) modelo.addRow(f);
         if (clave == null) return;
         for (int i = 0; i < modelo.getRowCount(); i++) {
-            if (clave.equals(modelo.getValueAt(i, 0))) { tabla.setRowSelectionInterval(i, i); break; }
+            if (clave.equals(modelo.getValueAt(i, 0))) {
+                int v = tabla.convertRowIndexToView(i);   // -1 si el filtro la oculta
+                if (v >= 0) tabla.setRowSelectionInterval(v, v);
+                break;
+            }
         }
     }
 

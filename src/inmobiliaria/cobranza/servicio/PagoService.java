@@ -114,17 +114,35 @@ public class PagoService {
         return recibo;
     }
 
-    // ---------- Eliminar una cuota (o la garantia) que todavia no recibio ningun pago ----------
-    public void eliminarCuota(String numeroContrato, int numeroCuota) {
-        Cuota objetivo = buscarCuota(numeroContrato, numeroCuota);
-        if (objetivo == null) throw new IllegalArgumentException("No existe esa cuota");
-        if (objetivo.getSaldo() != objetivo.getMonto())
-            throw new IllegalArgumentException("No se puede eliminar: ya tiene pagos registrados.");
-        ListaSimple<Cuota> quedan = new ListaSimple<>();
-        for (int i = 0; i < cuotas.getTamano(); i++)
-            if (cuotas.obtener(i) != objetivo) quedan.agregar(cuotas.obtener(i));
-        cuotas = quedan;
-        historial.registrarOperacion("Cuota eliminada: contrato " + numeroContrato + " cuota " + numeroCuota);
+    // ---------- Eliminar todo el registro de cuotas de un contrato ----------
+    // Borra sus cuotas (garantia incluida), sus pagos y sus recibos con los comprobantes anexados.
+    // Devuelve cuantas cuotas se eliminaron.
+    public int eliminarCuotas(String numeroContrato) {
+        ListaSimple<Cuota> quedanCuotas = new ListaSimple<>();
+        int borradas = 0;
+        for (int i = 0; i < cuotas.getTamano(); i++) {
+            Cuota c = cuotas.obtener(i);
+            if (c.getNumeroContrato().equals(numeroContrato)) borradas++;
+            else quedanCuotas.agregar(c);
+        }
+        if (borradas == 0) throw new IllegalArgumentException("El contrato no tiene cuotas");
+        ListaSimple<Pago> quedanPagos = new ListaSimple<>();
+        for (int i = 0; i < pagos.getTamano(); i++)
+            if (!pagos.obtener(i).getNumeroContrato().equals(numeroContrato)) quedanPagos.agregar(pagos.obtener(i));
+        ListaSimple<Recibo> quedanRecibos = new ListaSimple<>();
+        for (int i = 0; i < recibos.getTamano(); i++) {
+            Recibo r = recibos.obtener(i);
+            if (!r.getNumeroContrato().equals(numeroContrato)) {
+                quedanRecibos.agregar(r);
+            } else if (!r.getComprobante().isEmpty()) {
+                inmobiliaria.nucleo.util.Archivos.eliminar(r.getComprobante());
+            }
+        }
+        cuotas = quedanCuotas;
+        pagos = quedanPagos;
+        recibos = quedanRecibos;
+        historial.registrarOperacion("Cuotas eliminadas: contrato " + numeroContrato + ", " + borradas + " cuotas");
+        return borradas;
     }
 
     // ---------- Consultas ----------
