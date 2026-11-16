@@ -100,9 +100,6 @@ public class PanelCobranza extends JPanel {
         verRecibos.addActionListener(e -> verRecibos());
         botones.add(pagar);
         botones.add(verRecibos);
-        JButton eliminar = new JButton("Eliminar");
-        eliminar.addActionListener(e -> eliminarCuotas());
-        botones.add(eliminar);
         add(botones, BorderLayout.SOUTH);
 
         sincronizarContratos();
@@ -213,25 +210,6 @@ public class PanelCobranza extends JPanel {
     }
 
     // ---------- Registrar pago total o parcial y emitir recibo (RN-09, RN-10) ----------
-    // Elimina todo el registro de cuotas del contrato elegido (con sus pagos y recibos)
-    private void eliminarCuotas() {
-        Contrato c = (Contrato) comboContratos.getSelectedItem();
-        if (c == null) {
-            Dialogos.error(this, "No hay un contrato elegido.");
-            return;
-        }
-        int cantidad = pagos.cuotasDe(c.getNumero()).getTamano();
-        if (cantidad == 0) {
-            Dialogos.error(this, "El contrato no tiene cuotas.");
-            return;
-        }
-        if (!Dialogos.confirmar(this, "Eliminar cuotas", "Se eliminaran las " + cantidad
-                + " cuotas del contrato de " + c.getDocumentoArrendatario()
-                + ", con todos sus pagos y recibos.\nEsta accion no se puede deshacer. Continuar?")) return;
-        pagos.eliminarCuotas(c.getNumero());
-        refrescar();
-    }
-
     // Muestra solo las cuotas del estado elegido
     private void filtrarPorEstado() {
         String f = (String) filtroEstado.getSelectedItem();

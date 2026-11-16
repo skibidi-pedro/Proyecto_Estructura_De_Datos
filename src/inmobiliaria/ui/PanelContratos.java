@@ -91,6 +91,7 @@ public class PanelContratos extends JPanel {
         botones.add(boton("Activar", () -> activar()));
         botones.add(boton("Renovar", () -> renovar()));
         botones.add(boton("Finalizar", () -> finalizar()));
+        botones.add(boton("Eliminar", () -> eliminar()));
         add(botones, BorderLayout.SOUTH);
 
         refrescar();
@@ -324,6 +325,19 @@ public class PanelContratos extends JPanel {
         propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.NO_ALQUILADA);
         refrescar();
         Dialogos.info(this, "Liquidacion de garantia", liq.toString());
+    }
+
+    // Elimina el contrato con su documento, cuotas, pagos y recibos; si estaba vigente libera la unidad
+    private void eliminar() {
+        Contrato c = seleccionado();
+        if (!Dialogos.confirmar(this, "Eliminar contrato", "Eliminar el contrato de "
+                + nombreDe(c.getDocumentoArrendatario()) + " con sus cuotas y pagos?\nNo se puede deshacer.")) return;
+        pagos.eliminarCuotas(c.getNumero());
+        contratos.eliminar(c.getNumero());
+        if (contratos.contratoVigenteDeUnidad(c.getCodigoUnidad()) == null
+                && propiedades.buscarUnidad(c.getCodigoUnidad()) != null)
+            propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.NO_ALQUILADA);
+        refrescar();
     }
 
     // Campo de solo lectura para mostrar un dato en el formulario

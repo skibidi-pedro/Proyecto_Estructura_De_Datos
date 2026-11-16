@@ -69,8 +69,8 @@ de la ventana. El menu Reportes muestra Ingresos, Morosidad, Ocupacion y Alertas
   advierte y el contrato queda resaltado en amarillo hasta que se anexen.
 - **Estado del arrendatario (automatico):** MOROSO si tiene cuotas en mora, ACTIVO si tiene un contrato pendiente o vigente,
   INACTIVO si no tiene contratos o todos estan finalizados. Ya no se cambia a mano.
-- **Cobro de rentas y mora:** el boton Eliminar borra todo el registro de cuotas del contrato elegido,
-  con sus pagos y recibos (pide confirmacion).
+- **Eliminar contrato:** el boton Eliminar de Contratos borra el contrato con su documento, cuotas, pagos y
+  recibos (con aviso breve) y libera la unidad. En Cobro solo se agregan comprobantes.
 - **Busqueda y filtros:** Unidades y Contratos tienen un campo Buscar (en Contratos tambien por nombre del
   arrendatario) y Cobro tiene un filtro de cuotas por estado.
 - **Historial de operaciones:** menu a la derecha de Reportes; la operacion mas reciente va primero, se guarda

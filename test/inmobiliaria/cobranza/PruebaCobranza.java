@@ -196,7 +196,7 @@ public class PruebaCobranza {
         verificar("Eliminar borra todas las cuotas del contrato (garantia y 3 mensuales)", p2.eliminarCuotas("D1") == 4);
         verificar("Tambien borra sus pagos y recibos", p2.cuotasDe("D1").estaVacia()
                 && p2.pagosDe("D1").estaVacia() && p2.listarRecibos().estaVacia());
-        verificar("Un contrato sin cuotas no se puede vaciar otra vez", lanza(() -> p2.eliminarCuotas("D1")));
+        verificar("Vaciar un contrato sin cuotas no hace nada", p2.eliminarCuotas("D1") == 0);
         inmobiliaria.ui.Activacion.sincronizarEstados(ars, k2, m2);
         verificar("Sin mora y con contrato vigente vuelve a ACTIVO",
                 ars.buscar("DNI9").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.ACTIVO);
@@ -204,6 +204,9 @@ public class PruebaCobranza {
         inmobiliaria.ui.Activacion.sincronizarEstados(ars, k2, m2);
         verificar("Con todos sus contratos finalizados queda INACTIVO",
                 ars.buscar("DNI9").getEstado() == inmobiliaria.arrendatarios.modelo.EstadoArrendatario.INACTIVO);
+        k2.eliminar("D1");
+        verificar("Eliminar el contrato lo quita de la lista", k2.buscar("D1") == null
+                && lanza(() -> k2.eliminar("D1")));
 
         // ---- Historial (pila) y su persistencia ----
         Historial hist = new Historial();

@@ -155,6 +155,17 @@ public class ContratoService {
     }
 
     // ---------- Consultas ----------
+    // Elimina el contrato y su documento anexado. Las cuotas las borra quien llama (PagoService).
+    public void eliminar(String numero) {
+        Contrato c = buscarObligatorio(numero);
+        ListaSimple<Contrato> quedan = new ListaSimple<>();
+        for (int i = 0; i < contratos.getTamano(); i++)
+            if (contratos.obtener(i) != c) quedan.agregar(contratos.obtener(i));
+        contratos = quedan;
+        if (!c.getDocumento().isEmpty()) inmobiliaria.nucleo.util.Archivos.eliminar(c.getDocumento());
+        historial.registrarOperacion("Contrato eliminado: " + numero);
+    }
+
     public Contrato buscar(String numero) {
         for (int i = 0; i < contratos.getTamano(); i++) {
             Contrato c = contratos.obtener(i);

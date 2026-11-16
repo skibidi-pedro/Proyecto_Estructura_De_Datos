@@ -114,7 +114,7 @@ public class PagoService {
         return recibo;
     }
 
-    // ---------- Eliminar todo el registro de cuotas de un contrato ----------
+    // ---------- Eliminar todo el registro de cuotas de un contrato (al eliminar el contrato) ----------
     // Borra sus cuotas (garantia incluida), sus pagos y sus recibos con los comprobantes anexados.
     // Devuelve cuantas cuotas se eliminaron.
     public int eliminarCuotas(String numeroContrato) {
@@ -125,7 +125,7 @@ public class PagoService {
             if (c.getNumeroContrato().equals(numeroContrato)) borradas++;
             else quedanCuotas.agregar(c);
         }
-        if (borradas == 0) throw new IllegalArgumentException("El contrato no tiene cuotas");
+        if (borradas == 0) return 0;
         ListaSimple<Pago> quedanPagos = new ListaSimple<>();
         for (int i = 0; i < pagos.getTamano(); i++)
             if (!pagos.obtener(i).getNumeroContrato().equals(numeroContrato)) quedanPagos.agregar(pagos.obtener(i));
