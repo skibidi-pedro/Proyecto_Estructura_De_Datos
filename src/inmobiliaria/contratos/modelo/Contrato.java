@@ -21,6 +21,7 @@ public class Contrato implements Persistible {
     private double garantia;
     private String clausulas;
     private EstadoContrato estado;
+    private String documento = "";   // ruta del archivo del contrato (PDF, Word o foto); vacio si no tiene
 
     // Vacio, para poder usar desdeLineaCSV al cargar
     public Contrato() {
@@ -51,10 +52,12 @@ public class Contrato implements Persistible {
     public double getGarantia() { return garantia; }
     public String getClausulas() { return clausulas; }
     public EstadoContrato getEstado() { return estado; }
+    public String getDocumento() { return documento; }
 
     public void setFechaFin(LocalDate fechaFin) { this.fechaFin = fechaFin; }
     public void setRentaMensual(double rentaMensual) { this.rentaMensual = rentaMensual; }
     public void setEstado(EstadoContrato estado) { this.estado = estado; }
+    public void setDocumento(String ruta) { this.documento = limpiar(ruta); }
 
     // El separador del CSV es ';', asi que no puede aparecer en las clausulas
     private String limpiar(String texto) {
@@ -65,7 +68,7 @@ public class Contrato implements Persistible {
     public String aLineaCSV() {
         return numero + ";" + documentoArrendatario + ";" + codigoUnidad + ";"
                 + Fechas.convertirAString(fechaInicio) + ";" + Fechas.convertirAString(fechaFin) + ";"
-                + rentaMensual + ";" + diaPago + ";" + garantia + ";" + clausulas + ";" + estado;
+                + rentaMensual + ";" + diaPago + ";" + garantia + ";" + clausulas + ";" + estado + ";" + documento;
     }
 
     @Override
@@ -81,6 +84,7 @@ public class Contrato implements Persistible {
         garantia = Double.parseDouble(p[7]);
         clausulas = p[8];
         estado = EstadoContrato.valueOf(p[9]);
+        documento = p.length > 10 ? p[10] : "";   // los CSV anteriores no tenian esta columna
     }
 
     @Override

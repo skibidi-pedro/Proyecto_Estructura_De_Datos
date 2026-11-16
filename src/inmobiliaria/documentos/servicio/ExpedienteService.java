@@ -15,9 +15,9 @@ import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.nucleo.util.Validador;
 
 /**
- * Gestion de documentos y verificacion de expediente completo antes de activar contrato (2.4).
- * El expediente esta completo (RN-06) cuando tiene RECIBIDOS el documento de identidad
- * y el contrato firmado.
+ * Documento de identidad de cada arrendatario (archivo anexado) y verificacion del expediente (2.4).
+ * Por parte del arrendatario, el expediente esta completo (RN-06) cuando tiene RECIBIDO su documento
+ * de identidad; el documento del contrato se anexa al Contrato y Activacion revisa ambos.
  *
  * El servicio no valida que el arrendatario exista: quien lo llama (el panel) ya lo eligio
  * de la lista de arrendatarios.
@@ -28,7 +28,7 @@ import inmobiliaria.nucleo.util.Validador;
 public class ExpedienteService {
     private static final String ARCHIVO = "documentos.csv";
 
-    private ListaSimple<Expediente> expedientes = new ListaSimple<>();
+    private ListaSimple<Expediente> expedientes = new ListaSimple<>();   // no es final: eliminarExpediente la reemplaza
     private Historial historial;
 
     public ExpedienteService(Historial historial) {
@@ -63,7 +63,7 @@ public class ExpedienteService {
 
     // ---------- Anexar un archivo (PDF, Word o foto) como documento recibido ----------
     // Se copia a data/archivos/<documento del arrendatario>/ con el nombre del tipo:
-    // Identidad.jpg, Contrato.pdf, ... Si ya habia uno de ese tipo, se reemplaza.
+    // Identidad.jpg, Identidad.pdf, ... Si ya habia uno, se reemplaza.
     public Documento anexarArchivo(String documentoArrendatario, TipoDocumento tipo,
                                    File origen, LocalDate fecha) {
         if (!Validador.esTextoValido(documentoArrendatario))
@@ -75,8 +75,7 @@ public class ExpedienteService {
         Documento previo = e == null ? null : e.buscarPorTipo(tipo);
         String rutaAnterior = previo == null ? "" : previo.getRutaArchivo();
 
-        String nombreBase = tipo == TipoDocumento.IDENTIDAD ? "Identidad" : "Contrato";
-        String ruta = Archivos.copiar(origen, documentoArrendatario.trim(), nombreBase);
+        String ruta = Archivos.copiar(origen, documentoArrendatario.trim(), "Identidad");
         Documento d = registrarDocumento(documentoArrendatario, tipo, ruta, fecha);
         if (!rutaAnterior.isEmpty() && !rutaAnterior.equals(ruta)) Archivos.eliminar(rutaAnterior);
         return d;
@@ -96,6 +95,28 @@ public class ExpedienteService {
     public boolean expedienteCompleto(String documentoArrendatario) {
         Expediente e = buscarExpediente(documentoArrendatario);
         return e != null && e.estaCompleto();
+    }
+
+    // Ruta del documento de identidad anexado ("" si no tiene)
+    public String rutaIdentidad(String documentoArrendatario) {
+        Expediente e = buscarExpediente(documentoArrendatario);
+        Documento d = e == null ? null : e.buscarPorTipo(TipoDocumento.IDENTIDAD);
+        return d == null ? "" : d.getRutaArchivo();
+    }
+
+    // Borra el expediente (y sus archivos) al dar de baja al arrendatario
+    public void eliminarExpediente(String documentoArrendatario) {
+        ListaSimple<Expediente> quedan = new ListaSimple<>();
+        for (int i = 0; i < expedientes.getTamano(); i++) {
+            Expediente e = expedientes.obtener(i);
+            if (e.getDocumentoIdentidadArrendatario().equals(documentoArrendatario)) {
+                for (int j = 0; j < e.getDocumentos().getTamano(); j++)
+                    Archivos.eliminar(e.getDocumentos().obtener(j).getRutaArchivo());
+            } else {
+                quedan.agregar(e);
+            }
+        }
+        expedientes = quedan;
     }
 
     // Que le falta al expediente, en texto (para mostrar al activar un contrato)
@@ -142,7 +163,11 @@ public class ExpedienteService {
         GestorCSV.cargar(ARCHIVO, lineas);
         for (int i = 0; i < lineas.getTamano(); i++) {
             Documento d = new Documento();
-            d.desdeLineaCSV(lineas.obtener(i));
+            try {
+                d.desdeLineaCSV(lineas.obtener(i));
+            } catch (IllegalArgumentException ex) {
+                continue;   // tipo que ya no existe (p. ej. CONTRATO_FIRMADO de una version anterior)
+            }
             expedienteODefault(d.getDocumentoArrendatario()).agregarDocumento(d);
         }
     }

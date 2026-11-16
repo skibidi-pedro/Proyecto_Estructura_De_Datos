@@ -2,7 +2,9 @@ package inmobiliaria.ui;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.io.File;
 import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -18,26 +20,41 @@ import inmobiliaria.arrendatarios.modelo.Arrendatario;
 import inmobiliaria.arrendatarios.modelo.EstadoArrendatario;
 import inmobiliaria.arrendatarios.servicio.ArrendatarioService;
 import inmobiliaria.contratos.modelo.Contrato;
+import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.servicio.ContratoService;
+import inmobiliaria.documentos.modelo.TipoDocumento;
+import inmobiliaria.documentos.servicio.ExpedienteService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
+import inmobiliaria.nucleo.util.Archivos;
+import inmobiliaria.propiedades.servicio.PropiedadService;
 
 /**
  * Arrendatarios. Usa ArrendatarioService (Integrante 3).
  * El documento de identidad es la clave (RN-01) y se muestra: lo escribe el usuario.
  * Es un panel que MenuPrincipal muestra a la derecha de la ventana; se refresca solo cada segundo.
  * Un arrendatario con contratos no se puede eliminar (se puede marcar INACTIVO).
+ * Al crear o editar se anexa su documento de identidad (PDF, Word o foto): la columna Archivo
+ * muestra el nombre (Identidad.jpg) y con doble clic en la fila se abre. Si con ese documento
+ * quedan completos los de un contrato pendiente, se pregunta si activarlo (ver Activacion).
  */
 public class PanelArrendatarios extends JPanel {
     private final ArrendatarioService arrendatarios;
     private final ContratoService contratos;
+    private final ExpedienteService expedientes;
+    private final PropiedadService propiedades;
+    private final PagoService pagos;
     private final DefaultTableModel modelo = Dialogos.modelo(
-            "Documento", "Nombres", "Telefono", "Correo", "Estado");
+            "Documento", "Nombres", "Telefono", "Correo", "Archivo", "Estado");
     private final JTable tabla = Dialogos.tabla(modelo);
     private final JTextField buscar = new JTextField(10);
 
-    public PanelArrendatarios(ArrendatarioService arrendatarios, ContratoService contratos) {
+    public PanelArrendatarios(ArrendatarioService arrendatarios, ContratoService contratos,
+                              ExpedienteService expedientes, PropiedadService propiedades, PagoService pagos) {
         this.arrendatarios = arrendatarios;
         this.contratos = contratos;
+        this.expedientes = expedientes;
+        this.propiedades = propiedades;
+        this.pagos = pagos;
 
         setLayout(new BorderLayout(8, 8));
         JPanel norte = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -48,6 +65,7 @@ public class PanelArrendatarios extends JPanel {
         norte.add(ir);
         add(norte, BorderLayout.NORTH);
         add(new JScrollPane(tabla), BorderLayout.CENTER);
+        Dialogos.alDobleClick(tabla, () -> ejecutar(this::abrirDocumento));
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.CENTER));
         botones.add(boton("Nuevo", this::nuevo));
@@ -79,7 +97,7 @@ public class PanelArrendatarios extends JPanel {
         for (int i = 0; i < lista.getTamano(); i++) {
             Arrendatario a = lista.obtener(i);
             filas.add(new Object[] { a.getDocumentoIdentidad(), a.getNombresCompletos(), a.getTelefono(),
-                    a.getCorreo(), a.getEstado() });
+                    a.getCorreo(), nombreArchivo(a), a.getEstado() });
         }
         Dialogos.poblar(tabla, modelo, filas);
     }
@@ -106,18 +124,55 @@ public class PanelArrendatarios extends JPanel {
         }
     }
 
+    private String nombreArchivo(Arrendatario a) {
+        String ruta = expedientes.rutaIdentidad(a.getDocumentoIdentidad());
+        return ruta.isEmpty() ? "-" : Archivos.nombre(ruta);
+    }
+
+    private void ejecutar(Runnable accion) {
+        try {
+            accion.run();
+        } catch (IllegalArgumentException ex) {
+            Dialogos.error(this, ex.getMessage());
+        }
+    }
+
+    // Revisa el archivo elegido ANTES de guardar nada, para no dejar un arrendatario a medias
+    private File archivoElegido(JTextField ruta) {
+        if (ruta.getText().isEmpty()) return null;
+        File f = new File(ruta.getText());
+        if (!f.isFile()) throw new IllegalArgumentException("No se encuentra el archivo elegido.");
+        if (!Archivos.extensionValida(f.getName()))
+            throw new IllegalArgumentException("Formato no permitido. Use PDF, Word (doc, docx) o imagen (jpg, png).");
+        return f;
+    }
+
+    // Anexa el documento de identidad y, si con eso quedan completos los documentos de un contrato
+    // pendiente, pregunta si activarlo
+    private void anexarIdentidad(Arrendatario a, File archivo) {
+        if (archivo == null) return;
+        expedientes.anexarArchivo(a.getDocumentoIdentidad(), TipoDocumento.IDENTIDAD, archivo, LocalDate.now());
+        refrescar();
+        Activacion.ofrecer(this, a.getDocumentoIdentidad(), a.getNombresCompletos(),
+                contratos, propiedades, pagos, expedientes);
+    }
+
     // ---------- Nuevo (RN-01) ----------
     private void nuevo() {
         JTextField documento = Dialogos.texto("");
         JTextField nombres = Dialogos.texto("");
         JTextField telefono = Dialogos.texto("");
         JTextField correo = Dialogos.texto("");
+        JTextField archivo = Dialogos.texto("");
         if (!Dialogos.formulario(this, "Nuevo arrendatario",
-                new String[] { "Documento de identidad", "Nombres completos", "Telefono", "Correo" },
-                new JComponent[] { documento, nombres, telefono, correo })) return;
-        arrendatarios.registrar(documento.getText(), nombres.getText(), telefono.getText(),
+                new String[] { "Numero de documento", "Nombres completos", "Telefono", "Correo",
+                        "Documento de identidad (archivo)" },
+                new JComponent[] { documento, nombres, telefono, correo, Dialogos.campoArchivo(this, archivo) })) return;
+        File f = archivoElegido(archivo);
+        Arrendatario a = arrendatarios.registrar(documento.getText(), nombres.getText(), telefono.getText(),
                 correo.getText());
         refrescar();
+        anexarIdentidad(a, f);
     }
 
     private void editar() {
@@ -125,12 +180,26 @@ public class PanelArrendatarios extends JPanel {
         JTextField nombres = Dialogos.texto(a.getNombresCompletos());
         JTextField telefono = Dialogos.texto(a.getTelefono());
         JTextField correo = Dialogos.texto(a.getCorreo());
+        JTextField archivo = Dialogos.texto("");
         if (!Dialogos.formulario(this, "Editar " + a.getDocumentoIdentidad(),
-                new String[] { "Nombres completos", "Telefono", "Correo" },
-                new JComponent[] { nombres, telefono, correo })) return;
+                new String[] { "Nombres completos", "Telefono", "Correo",
+                        "Documento de identidad (archivo, solo si lo cambia)" },
+                new JComponent[] { nombres, telefono, correo, Dialogos.campoArchivo(this, archivo) })) return;
+        File f = archivoElegido(archivo);
         arrendatarios.actualizar(a.getDocumentoIdentidad(), nombres.getText(), telefono.getText(),
                 correo.getText());
         refrescar();
+        anexarIdentidad(a, f);
+    }
+
+    // Doble clic en la fila: abre el documento de identidad anexado
+    private void abrirDocumento() {
+        Arrendatario a = seleccionado();
+        String ruta = expedientes.rutaIdentidad(a.getDocumentoIdentidad());
+        if (ruta.isEmpty())
+            throw new IllegalArgumentException("Este arrendatario todavia no tiene documento de identidad anexado. "
+                    + "Use Editar para anexarlo.");
+        Archivos.abrir(ruta);
     }
 
     private void estado() {
@@ -152,6 +221,7 @@ public class PanelArrendatarios extends JPanel {
         }
         if (!Dialogos.confirmar(this, "Eliminar", "Eliminar a " + a.getNombresCompletos() + "?")) return;
         arrendatarios.eliminar(a.getDocumentoIdentidad());
+        expedientes.eliminarExpediente(a.getDocumentoIdentidad());
         refrescar();
     }
 }

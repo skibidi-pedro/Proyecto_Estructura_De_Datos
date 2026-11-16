@@ -8,7 +8,6 @@ import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.documentos.servicio.ExpedienteService;
-import inmobiliaria.mantenimiento.servicio.MantenimientoService;
 import inmobiliaria.nucleo.historial.Historial;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 import inmobiliaria.reportes.ReporteService;
@@ -28,7 +27,6 @@ public class Main {
         MoraService mora = new MoraService(pagos);
         ArrendatarioService arrendatarios = new ArrendatarioService(historial);
         ExpedienteService expedientes = new ExpedienteService(historial);
-        MantenimientoService mantenimiento = new MantenimientoService(historial);
         ReporteService reportes = new ReporteService(contratos, pagos, mora, propiedades);
         AlertaService alertas = new AlertaService(contratos, pagos, mora);
 
@@ -38,7 +36,6 @@ public class Main {
             pagos.cargar();
             arrendatarios.cargar();
             expedientes.cargar();
-            mantenimiento.cargar();
         } catch (RuntimeException e) {
             // Si un CSV esta danado se avisa y se sale: seguir y guardar al cerrar pisaria los datos
             JOptionPane.showMessageDialog(null,
@@ -49,6 +46,6 @@ public class Main {
 
         SwingUtilities.invokeLater(() ->
             new MenuPrincipal(propiedades, contratos, pagos, mora, arrendatarios, expedientes,
-                    mantenimiento, reportes, alertas).setVisible(true));
+                    reportes, alertas).setVisible(true));
     }
 }

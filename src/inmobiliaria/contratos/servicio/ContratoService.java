@@ -7,6 +7,7 @@ import inmobiliaria.nucleo.estructuras.ListaSimple;
 import inmobiliaria.nucleo.historial.Historial;
 import inmobiliaria.nucleo.persistencia.GestorCSV;
 import inmobiliaria.nucleo.persistencia.Persistible;
+import inmobiliaria.nucleo.util.Archivos;
 import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.nucleo.util.Validador;
 
@@ -73,12 +74,26 @@ public class ContratoService {
         if (c.getEstado() != EstadoContrato.PENDIENTE)
             throw new IllegalArgumentException("Solo se puede activar un contrato pendiente");
         if (!expedienteCompleto)                                       // RN-06
-            throw new IllegalArgumentException("El expediente esta incompleto (identidad y contrato firmado)");
+            throw new IllegalArgumentException("El expediente esta incompleto (documento de identidad y documento del contrato)");
         if (contratoVigenteDeUnidad(c.getCodigoUnidad()) != null)      // RN-03
             throw new IllegalArgumentException("La unidad ya tiene un contrato vigente");
 
         c.setEstado(EstadoContrato.VIGENTE);
         historial.registrarOperacion("Contrato activado: " + numero);
+        return c;
+    }
+
+    // ---------- Anexar el documento del contrato (PDF, Word o foto) ----------
+    // Se copia a data/archivos/contrato_<numero>/Contrato.<ext>; si ya habia uno, se reemplaza.
+    public Contrato anexarDocumento(String numero, java.io.File origen) {
+        Contrato c = buscarObligatorio(numero);
+        if (c.getEstado() == EstadoContrato.FINALIZADO)
+            throw new IllegalArgumentException("El contrato ya esta finalizado");
+        String anterior = c.getDocumento();
+        String ruta = Archivos.copiar(origen, "contrato_" + numero, "Contrato");
+        c.setDocumento(ruta);
+        if (!anterior.isEmpty() && !anterior.equals(ruta)) Archivos.eliminar(anterior);
+        historial.registrarOperacion("Documento anexado al contrato " + numero);
         return c;
     }
 

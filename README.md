@@ -12,7 +12,6 @@ src/inmobiliaria/
 ├── contratos/     (modelo, servicio)                             → Integrante 2
 ├── arrendatarios/ (estructuras TablaHash, modelo, servicio)      → Integrante 3
 ├── documentos/    (modelo, servicio)                             → Integrante 3
-├── mantenimiento/ (modelo, servicio)                             → Integrante 3
 ├── cobranza/      (modelo, servicio)                             → Integrante 4
 ├── alertas/                                                      → Integrante 4
 └── reportes/                                                     → Integrante 4
@@ -27,7 +26,7 @@ docs/                → documentación y plan de pruebas
 |---|------------|----------|-----------|--------|
 | 1 | Francia Ramos Johan Mitziu (líder técnico) | `Main`, `nucleo.*` | 2.7, 2.8 | RN-01 |
 | 2 | Zavaleta Calderon Steven Jack | `propiedades.*`, `contratos.*` | 2.1, 2.3 | RN-02, 03, 04, 05, 12, 13 |
-| 3 | Quispe Rodriguez Carlos Manuel Ignacio | `arrendatarios.*`, `documentos.*`, `mantenimiento.*` | 2.2, 2.4, 2.6 | RN-06 |
+| 3 | Quispe Rodriguez Carlos Manuel Ignacio | `arrendatarios.*`, `documentos.*` | 2.2, 2.4 | RN-06 |
 | 4 | Pucho Lizana Pedro Eduardo Mar | `cobranza.*`, `alertas`, `reportes` | 2.5 + alertas y reportes | RN-07, 08, 09, 10, 11 |
 
 ## Estructuras de datos por módulo
@@ -56,22 +55,25 @@ java -cp out inmobiliaria.arrendatarios.PruebaModulos
 
 ## Modulos del menu
 
-Unidades, Arrendatarios, Contratos, Documentos, Cobro de rentas y mora y Mantenimiento
-se abren como paneles a la derecha de la ventana. El menu Reportes muestra Ingresos,
-Morosidad, Ocupacion y Alertas. Un contrato solo se activa con el expediente completo
-(identidad + contrato firmado, RN-06).
+Unidades, Arrendatarios, Contratos y Cobro de rentas y mora se abren como paneles a la derecha
+de la ventana. El menu Reportes muestra Ingresos, Morosidad, Ocupacion y Alertas.
 
-- **Documentos:** cada documento es un archivo anexado (PDF, Word o foto). Se copia a
-  `data/archivos/<documento>/` como `Identidad.jpg`, `Contrato.pdf`, etc.; la columna Archivo
-  muestra el nombre y con doble clic se abre. Al completar el expediente, si el arrendatario
-  tiene un contrato pendiente, el sistema pregunta si activarlo (Si / No).
-- **Recibos:** al registrar un pago se puede anexar el comprobante (foto o PDF). En
-  "Ver recibos", doble clic abre el comprobante y "Anexar comprobante" lo agrega o reemplaza
-  despues. Se guardan en `data/archivos/recibos/`.
+- **Documentos anexados:** se aceptan PDF, Word (doc, docx) y fotos (jpg, png). Se copian a
+  `data/archivos/`; en las tablas la columna **Archivo** muestra el nombre (`Identidad.jpg`,
+  `Contrato.pdf`) y con **doble clic** en la fila se abre con el programa del sistema.
+  - **Arrendatarios:** "Nuevo" y "Editar" permiten anexar el documento de identidad.
+  - **Contratos:** "Nuevo contrato" permite anexar el documento del contrato; despues se puede
+    agregar o cambiar con "Anexar documento".
+- **Activacion (RN-06):** un contrato se activa cuando tiene el documento de identidad del
+  arrendatario y el documento del contrato. Al completarse el segundo, el sistema pregunta
+  "Los documentos estan registrados. Activar el contrato? Si / No". Tambien se puede activar
+  a mano con el boton Activar.
+- **Recibos:** al registrar un pago se puede anexar el comprobante (foto o PDF). En "Ver recibos",
+  doble clic abre el comprobante y "Anexar comprobante" lo agrega o reemplaza despues.
 - **Garantia:** al activar un contrato con garantia se crea la cuota 0 ("Garantia"), que vence el dia
-  de inicio y se cobra en Cobro de rentas y mora como cualquier cuota (pago total o parcial, con recibo
-  y comprobante). No cuenta como deuda de renta, ni genera recargo por mora, ni es ingreso (el reporte
-  la informa aparte). Al finalizar el contrato se liquida con la garantia realmente pagada.
+  de inicio y se cobra en Cobro de rentas y mora como cualquier cuota (pago total o parcial, con
+  recibo y comprobante). No cuenta como deuda de renta, ni genera recargo por mora, ni es ingreso
+  (el reporte la informa aparte). Al finalizar el contrato se liquida con la garantia realmente pagada.
 - **Pestañas:** cada modulo conserva lo que tenia elegido (arrendatario, contrato, fila) al cambiar
-  de uno a otro. Al cambiar de propiedad se reinician, salvo Arrendatarios y Documentos.
+  de uno a otro. Al cambiar de propiedad se reinician, salvo Arrendatarios.
 - `data/archivos/` esta en `.gitignore`: son documentos personales.

@@ -1,7 +1,7 @@
 package inmobiliaria.nucleo.estructuras;
 
 /**
- * Cola de prioridad con heap binario (mantenimiento y cobros urgentes).
+ * Cola de prioridad con heap binario (cobros urgentes).
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */

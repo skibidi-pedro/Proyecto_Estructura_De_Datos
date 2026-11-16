@@ -1,5 +1,6 @@
 package inmobiliaria.ui;
 
+import java.awt.Component;
 import inmobiliaria.cobranza.modelo.Cuota;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.modelo.Contrato;
@@ -8,29 +9,65 @@ import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.documentos.servicio.ExpedienteService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 import inmobiliaria.propiedades.modelo.EstadoUnidad;
+import inmobiliaria.propiedades.modelo.Unidad;
 import inmobiliaria.propiedades.servicio.PropiedadService;
 
 /**
- * Activacion de un contrato (la comparten PanelContratos y PanelDocumentos).
+ * Activacion de un contrato (la comparten PanelContratos y PanelArrendatarios).
  *
  * ContratoService no conoce a los demas modulos, asi que aqui se hace el pegado:
- *  - expediente completo (RN-06)  -> ExpedienteService
+ *  - documentos completos (RN-06) -> documento de identidad del arrendatario (ExpedienteService)
+ *                                    y documento del contrato (Contrato.getDocumento)
  *  - unidad pasa a ALQUILADA      -> PropiedadService
- *  - cuotas mensuales (RN-07)     -> PagoService
+ *  - cuotas mensuales y garantia  -> PagoService (RN-07)
  */
 public class Activacion {
+
+    // Que documentos faltan para activar (texto vacio = nada, el contrato esta listo)
+    public static String faltantes(Contrato c, ExpedienteService expedientes) {
+        StringBuilder sb = new StringBuilder();
+        if (!expedientes.expedienteCompleto(c.getDocumentoArrendatario()))
+            sb.append("el documento de identidad del arrendatario (se anexa en Arrendatarios)");
+        if (c.getDocumento().isEmpty()) {
+            if (sb.length() > 0) sb.append(" y ");
+            sb.append("el documento del contrato (use Anexar documento en Contratos)");
+        }
+        return sb.toString();
+    }
 
     // Activa el contrato y devuelve las cuotas generadas. Lanza IllegalArgumentException si no se puede.
     public static ListaSimple<Cuota> activar(Contrato c, ContratoService contratos,
                                              PropiedadService propiedades, PagoService pagos,
                                              ExpedienteService expedientes) {
-        String doc = c.getDocumentoArrendatario();
-        if (!expedientes.expedienteCompleto(doc))
-            throw new IllegalArgumentException("El expediente de " + doc + " esta incompleto. Falta: "
-                    + expedientes.faltantes(doc) + ".\nRegistrelo en el modulo Documentos.");
+        String falta = faltantes(c, expedientes);
+        if (!falta.isEmpty())
+            throw new IllegalArgumentException("No se puede activar el contrato: falta " + falta + ".");
         contratos.activar(c.getNumero(), true);
         propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.ALQUILADA);
         return pagos.generarCuotas(c);
+    }
+
+    // Documentos registrados: por cada contrato PENDIENTE del arrendatario que ya tiene todos sus
+    // documentos pregunta "activar? Si / No" y, si dice que si, lo activa.
+    public static void ofrecer(Component padre, String documentoArrendatario, String nombreArrendatario,
+                               ContratoService contratos, PropiedadService propiedades,
+                               PagoService pagos, ExpedienteService expedientes) {
+        ListaSimple<Contrato> pendientes = pendientesDe(documentoArrendatario, contratos);
+        for (int i = 0; i < pendientes.getTamano(); i++) {
+            Contrato c = pendientes.obtener(i);
+            if (!faltantes(c, expedientes).isEmpty()) continue;
+            Unidad u = propiedades.buscarUnidad(c.getCodigoUnidad());
+            String donde = u == null ? "(unidad dada de baja)" : u.getDireccion();
+            if (!Dialogos.confirmar(padre, "Documentos registrados",
+                    "Los documentos de " + nombreArrendatario + " estan registrados.\n"
+                    + "Activar su contrato de " + donde + "?")) continue;
+            try {
+                ListaSimple<Cuota> cuotas = activar(c, contratos, propiedades, pagos, expedientes);
+                Dialogos.info(padre, "Contrato", "Contrato activado.\n" + resumen(c, cuotas));
+            } catch (IllegalArgumentException ex) {
+                Dialogos.error(padre, ex.getMessage());
+            }
+        }
     }
 
     // Cuotas de renta de una lista (sin la garantia, que es la cuota 0)
@@ -51,7 +88,7 @@ public class Activacion {
         return t;
     }
 
-    // Contratos PENDIENTES de un arrendatario (los que esperan su expediente)
+    // Contratos PENDIENTES de un arrendatario (los que esperan sus documentos)
     public static ListaSimple<Contrato> pendientesDe(String documentoArrendatario, ContratoService contratos) {
         ListaSimple<Contrato> r = new ListaSimple<>();
         ListaSimple<Contrato> todos = contratos.listar();

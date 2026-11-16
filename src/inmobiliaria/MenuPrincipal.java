@@ -11,7 +11,6 @@ import inmobiliaria.cobranza.servicio.MoraService;
 import inmobiliaria.cobranza.servicio.PagoService;
 import inmobiliaria.contratos.servicio.ContratoService;
 import inmobiliaria.documentos.servicio.ExpedienteService;
-import inmobiliaria.mantenimiento.servicio.MantenimientoService;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
 import inmobiliaria.nucleo.util.Fechas;
 import inmobiliaria.nucleo.util.GeneradorCodigo;
@@ -23,8 +22,6 @@ import inmobiliaria.ui.Dialogos;
 import inmobiliaria.ui.PanelArrendatarios;
 import inmobiliaria.ui.PanelCobranza;
 import inmobiliaria.ui.PanelContratos;
-import inmobiliaria.ui.PanelDocumentos;
-import inmobiliaria.ui.PanelMantenimiento;
 import inmobiliaria.ui.PanelUnidades;
 
 /**
@@ -38,7 +35,7 @@ import inmobiliaria.ui.PanelUnidades;
  *
  * Una "propiedad" es un edificio del propietario (Propietario > Edificio > Unidad).
  *
- * Modulos conectados: Unidades, Arrendatarios, Contratos, Documentos, Cobro de rentas y mora, Mantenimiento.
+ * Modulos: Unidades, Arrendatarios (con su documento de identidad), Contratos (con su documento) y Cobro de rentas y mora.
  * Menu Reportes: Ingresos, Morosidad, Ocupacion (ReporteService) y Alertas (AlertaService).
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
@@ -66,7 +63,6 @@ public class MenuPrincipal extends JFrame {
     private final MoraService mora;
     private final ArrendatarioService arrendatarios;
     private final ExpedienteService expedientes;
-    private final MantenimientoService mantenimiento;
     private final ReporteService reporteService;
     private final AlertaService alertaService;
 
@@ -93,9 +89,7 @@ public class MenuPrincipal extends JFrame {
         new Opcion("Unidades"),
         new Opcion("Arrendatarios"),
         new Opcion("Contratos"),
-        new Opcion("Documentos"),
         new Opcion("Cobro de rentas y mora"),
-        new Opcion("Mantenimiento"),
     };
 
     // Reportes y alertas (se muestran en un dialogo de texto)
@@ -105,7 +99,7 @@ public class MenuPrincipal extends JFrame {
 
     public MenuPrincipal(PropiedadService propiedades, ContratoService contratos,
                          PagoService pagos, MoraService mora, ArrendatarioService arrendatarios,
-                         ExpedienteService expedientes, MantenimientoService mantenimiento,
+                         ExpedienteService expedientes,
                          ReporteService reporteService, AlertaService alertaService) {
         super("Gestión Inmobiliaria - Grupo 6");
         this.propiedades = propiedades;
@@ -114,7 +108,6 @@ public class MenuPrincipal extends JFrame {
         this.mora = mora;
         this.arrendatarios = arrendatarios;
         this.expedientes = expedientes;
-        this.mantenimiento = mantenimiento;
         this.reporteService = reporteService;
         this.alertaService = alertaService;
 
@@ -337,13 +330,13 @@ public class MenuPrincipal extends JFrame {
         menuReportes.setEnabled(elegida != null);
     }
 
-    // Al cambiar de propiedad se descartan los paneles que dependen de ella; Arrendatarios y
-    // Documentos no dependen de la propiedad, asi que conservan lo que estaba elegido.
+    // Al cambiar de propiedad se descartan los paneles que dependen de ella; Arrendatarios
+    // no depende de la propiedad, asi que conserva lo que estaba elegido.
     private void olvidarVistasDePropiedad() {
         if (vistasModulos == null) return;
         for (int i = 0; i < vistasModulos.length; i++) {
             String titulo = opciones[i].titulo();
-            if (!titulo.equals("Arrendatarios") && !titulo.equals("Documentos")) vistasModulos[i] = null;
+            if (!titulo.equals("Arrendatarios")) vistasModulos[i] = null;
         }
     }
 
@@ -387,7 +380,6 @@ public class MenuPrincipal extends JFrame {
         pagos.guardar();
         arrendatarios.guardar();
         expedientes.guardar();
-        mantenimiento.guardar();
     }
 
     // ---------- Modulos: toggle, uno a la vez, se muestran a la derecha ----------
@@ -416,12 +408,10 @@ public class MenuPrincipal extends JFrame {
     private JComponent crearVistaModulo(String modulo) {
         return switch (modulo) {
             case "Unidades" -> new PanelUnidades(propiedades, propiedadActual);
-            case "Arrendatarios" -> new PanelArrendatarios(arrendatarios, contratos);
+            case "Arrendatarios" -> new PanelArrendatarios(arrendatarios, contratos, expedientes, propiedades, pagos);
             case "Contratos" -> new PanelContratos(contratos, propiedades, pagos, mora,
                     arrendatarios, expedientes, propiedadActual);
-            case "Documentos" -> new PanelDocumentos(expedientes, arrendatarios, contratos, propiedades, pagos);
             case "Cobro de rentas y mora" -> new PanelCobranza(contratos, pagos, mora, propiedades, propiedadActual);
-            case "Mantenimiento" -> new PanelMantenimiento(mantenimiento, propiedades, propiedadActual);
             default -> throw new IllegalArgumentException("Módulo desconocido: " + modulo);
         };
     }
