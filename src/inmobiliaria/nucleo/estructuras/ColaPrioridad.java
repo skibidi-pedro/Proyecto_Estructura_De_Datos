@@ -1,7 +1,7 @@
 package inmobiliaria.nucleo.estructuras;
 
 /**
- * Cola de prioridad con heap binario (cobros urgentes).
+ * Cola de prioridad con lista enlazada ordenada (cobros urgentes): encolar es O(n), desencolar es O(1).
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */

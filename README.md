@@ -30,7 +30,7 @@ docs/                → documentación y plan de pruebas
 
 ## Estructuras de datos por módulo
 
-- **Integrante 1:** lista simple, lista doble, pila, cola, cola de prioridad (heap), tabla hash con encadenamiento (arrendatarios).
+- **Integrante 1:** lista simple, lista doble, pila, cola, cola de prioridad (lista enlazada ordenada por prioridad), tabla hash con encadenamiento (arrendatarios).
 - **Integrante 2:** árbol AVL genérico, árbol general (Propietario > Edificio > Unidad).
 - **Integrante 3:** usa las estructuras del núcleo (cola de prioridad para cobros urgentes).
 
