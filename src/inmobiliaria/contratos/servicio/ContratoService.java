@@ -55,7 +55,7 @@ public class ContratoService {
             throw new IllegalArgumentException("La renta debe ser mayor a cero");
         if (!Validador.esDiaPagoValido(diaPago))
             throw new IllegalArgumentException("El dia de pago debe estar entre 1 y 28");
-        if (garantia < 0)
+        if (!Double.isFinite(garantia) || garantia < 0)
             throw new IllegalArgumentException("La garantia no puede ser negativa");
         if (!Fechas.esPosterior(inicio, fin))                          // RN-05
             throw new IllegalArgumentException("La fecha de fin debe ser posterior a la de inicio");
@@ -108,6 +108,8 @@ public class ContratoService {
     }
 
     private void aplicarAjuste(Contrato c, double porcentaje) {
+        if (!Double.isFinite(porcentaje))
+            throw new IllegalArgumentException("El porcentaje debe ser finito");
         double nueva = c.getRentaMensual() * (1 + porcentaje / 100.0);
         if (!Validador.esMontoValido(nueva))
             throw new IllegalArgumentException("La renta resultante debe ser mayor a cero");
@@ -121,6 +123,9 @@ public class ContratoService {
         if (c.getEstado() != EstadoContrato.VIGENTE)
             throw new IllegalArgumentException("Solo se puede finalizar un contrato vigente");
 
+        if (!Double.isFinite(deudaRenta) || !Double.isFinite(mora) || !Double.isFinite(danos)
+                || deudaRenta < 0 || mora < 0 || danos < 0)
+            throw new IllegalArgumentException("Los descuentos deben ser montos validos y no negativos");
         c.setEstado(EstadoContrato.FINALIZADO);
         historial.registrarOperacion("Contrato finalizado: " + numero);
         return new LiquidacionGarantia(c.getGarantia(), deudaRenta, mora, danos);
