@@ -15,7 +15,7 @@ public class Validador {
     }
 
     public static boolean esMontoValido(double monto) {
-        return monto > 0;
+        return Double.isFinite(monto) && monto > 0;
     }
 
     public static boolean esDiaPagoValido(int dia) {
