@@ -2,6 +2,7 @@ package inmobiliaria.nucleo.util;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.time.temporal.ChronoUnit;
 /**
  * Utilidades de fechas compartidas por todos los modulos.
@@ -11,7 +12,7 @@ import java.time.temporal.ChronoUnit;
 
 
 public class Fechas {
-    private static final DateTimeFormatter FORMATO = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter FORMATO = DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT);
 
     public static String convertirAString(LocalDate fecha) {
         if (fecha == null) {
