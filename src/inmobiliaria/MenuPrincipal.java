@@ -306,9 +306,13 @@ public class MenuPrincipal extends JFrame {
         itemCambiar.addActionListener(e -> mostrarSeleccion());
         JMenuItem guardar = new JMenuItem("Guardar datos (CSV)");
         guardar.addActionListener(e -> {
-            guardarTodo();
-            JOptionPane.showMessageDialog(this, "Datos guardados exitosamente en CSV.",
-                "Persistencia", JOptionPane.INFORMATION_MESSAGE);
+            try {
+                guardarTodo();
+                JOptionPane.showMessageDialog(this, "Datos guardados exitosamente en CSV.",
+                    "Persistencia", JOptionPane.INFORMATION_MESSAGE);
+            } catch (RuntimeException ex) {
+                Dialogos.error(this, "No se pudieron guardar todos los datos: " + ex.getMessage());
+            }
         });
 
         archivo.add(itemCambiar);
@@ -363,9 +367,14 @@ public class MenuPrincipal extends JFrame {
         int r = JOptionPane.showConfirmDialog(this, "¿Desea salir? Se guardarán los datos.", "Salir",
             JOptionPane.YES_NO_OPTION);
         if (r == JOptionPane.YES_OPTION) {
-            guardarTodo();
-            dispose();
-            System.exit(0);
+            try {
+                guardarTodo();
+                dispose();
+                System.exit(0);
+            } catch (RuntimeException ex) {
+                Dialogos.error(this, "Error al guardar: " + ex.getMessage()
+                    + ". La aplicacion permanecera abierta para evitar perder datos.");
+            }
         }
     }
 }
