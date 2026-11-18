@@ -36,12 +36,23 @@ public class PagoService {
         this.historial = historial;
     }
 
+    // Verifica antes de activar: evita cambios parciales si ya hay cuotas.
+    // Se permite estado PENDIENTE porque Activacion lo llama antes de activar.
+    public void validarGeneracionCuotas(Contrato c) {
+        if (c == null || c.getFechaInicio() == null || c.getFechaFin() == null
+                || c.getDiaPago() < 1 || c.getDiaPago() > 28
+                || !Double.isFinite(c.getRentaMensual()) || c.getRentaMensual() <= 0
+                || !Double.isFinite(c.getGarantia()) || c.getGarantia() < 0)
+            throw new IllegalArgumentException("El contrato tiene datos invalidos para generar cuotas");
+        if (!cuotasDe(c.getNumero()).estaVacia())
+            throw new IllegalArgumentException("El contrato " + c.getNumero() + " ya tiene cuotas");
+    }
+
     // ---------- Generar cuotas (RN-07): al activar el contrato ----------
     public ListaSimple<Cuota> generarCuotas(Contrato c) {
         if (c.getEstado() != EstadoContrato.VIGENTE)
             throw new IllegalArgumentException("Solo se generan cuotas de un contrato vigente");
-        if (!cuotasDe(c.getNumero()).estaVacia())
-            throw new IllegalArgumentException("El contrato " + c.getNumero() + " ya tiene cuotas");
+        validarGeneracionCuotas(c);
 
         // Cuota 0 = garantia (si el contrato la tiene), vence el dia que empieza el contrato
         ListaSimple<Cuota> nuevas = new ListaSimple<>();
