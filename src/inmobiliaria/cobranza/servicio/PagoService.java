@@ -55,7 +55,15 @@ public class PagoService {
         if (c.getEstado() != EstadoContrato.VIGENTE)
             throw new IllegalArgumentException("Solo se generan cuotas de un contrato vigente");
 
-        int siguiente = cuotasDe(c.getNumero()).getTamano() + 1;
+        if (fechaFinAnterior == null || !fechaFinAnterior.isBefore(c.getFechaFin()))
+            throw new IllegalArgumentException("Periodo anterior de renovacion invalido");
+        ListaSimple<Cuota> existentes = cuotasDe(c.getNumero());
+        int siguiente = 1;
+        for (Cuota cuota : existentes) {
+            siguiente = Math.max(siguiente, cuota.getNumero() + 1);
+            if (cuota.getVencimiento().isAfter(fechaFinAnterior))
+                throw new IllegalArgumentException("Ya hay cuotas posteriores al fin anterior: revise la renovacion");
+        }
         ListaSimple<Cuota> nuevas = GeneradorCuotas.generar(c, fechaFinAnterior, siguiente);
         agregarCuotas(nuevas);
         historial.registrarOperacion("Cuotas de renovacion generadas: contrato " + c.getNumero()
@@ -80,6 +88,8 @@ public class PagoService {
         if (cuota.estaPagada())
             throw new IllegalArgumentException("La cuota ya esta pagada");
 
+        if (!Double.isFinite(monto))
+            throw new IllegalArgumentException("El monto del pago debe ser finito");
         monto = Math.round(monto * 100.0) / 100.0;
         if (monto <= 0)                                                // RN-09
             throw new IllegalArgumentException("El monto del pago debe ser mayor a cero");
