@@ -1,54 +1,57 @@
 package inmobiliaria.nucleo.persistencia;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import inmobiliaria.nucleo.estructuras.ListaSimple;
-/**
- * Lectura y escritura de archivos CSV de todos los modulos (2.8).
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
- */
 
-
+/** Persistencia CSV: escritura temporal y errores visibles al usuario. */
 public class GestorCSV {
-    private static final String RUTA_DIRECTORIO = "data/";
+    private static final Path DIRECTORIO = Paths.get("data");
 
     public static void guardar(String nombreArchivo, ListaSimple<Persistible> elementos) {
-        File directorio = new File(RUTA_DIRECTORIO);
-        if (!directorio.exists()) {
-            directorio.mkdirs();
-        }
-
-        File archivo = new File(RUTA_DIRECTORIO + nombreArchivo);
-        try (BufferedWriter escritor = new BufferedWriter(new FileWriter(archivo))) {
-            for (int i = 0; i < elementos.getTamano(); i++) {
-                Persistible item = elementos.obtener(i);
-                escritor.write(item.aLineaCSV());
-                escritor.newLine();
+        Path temporal = null;
+        try {
+            Files.createDirectories(DIRECTORIO);
+            Path destino = DIRECTORIO.resolve(nombreArchivo);
+            temporal = Files.createTempFile(DIRECTORIO, "guardado-", ".tmp");
+            try (BufferedWriter escritor = Files.newBufferedWriter(temporal, StandardCharsets.UTF_8)) {
+                for (Persistible item : elementos) {
+                    escritor.write(item.aLineaCSV());
+                    escritor.newLine();
+                }
+            }
+            try {
+                Files.move(temporal, destino, StandardCopyOption.ATOMIC_MOVE,
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(temporal, destino, StandardCopyOption.REPLACE_EXISTING);
             }
         } catch (IOException e) {
-            System.err.println("Error al guardar el archivo: " + e.getMessage());
+            throw new IllegalStateException("Error al guardar " + nombreArchivo, e);
+        } finally {
+            if (temporal != null) {
+                try { Files.deleteIfExists(temporal); } catch (IOException ignored) { }
+            }
         }
     }
 
     public static void cargar(String nombreArchivo, ListaSimple<String> lineas) {
-        File archivo = new File(RUTA_DIRECTORIO + nombreArchivo);
-        if (!archivo.exists()) {
-            return;
-        }
-
-        try (BufferedReader lector = new BufferedReader(new FileReader(archivo))) {
+        Path archivo = DIRECTORIO.resolve(nombreArchivo);
+        if (!Files.exists(archivo)) return;
+        try (BufferedReader lector = Files.newBufferedReader(archivo, StandardCharsets.UTF_8)) {
             String linea;
             while ((linea = lector.readLine()) != null) {
-                if (!linea.trim().isEmpty()) {
-                    lineas.agregar(linea);
-                }
+                if (!linea.trim().isEmpty()) lineas.agregar(linea);
             }
         } catch (IOException e) {
-            System.err.println("Error al leer el archivo: " + e.getMessage());
+            throw new IllegalStateException("Error al leer " + nombreArchivo, e);
         }
     }
 }
