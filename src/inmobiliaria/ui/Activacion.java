@@ -45,9 +45,30 @@ public class Activacion {
     // No exige documentos: quien llama ya pregunto al usuario si faltaban (ver PanelContratos).
     public static ListaSimple<Cuota> activar(Contrato c, ContratoService contratos,
                                              PropiedadService propiedades, PagoService pagos) {
+        if (c == null || c.getEstado() != EstadoContrato.PENDIENTE)
+            throw new IllegalArgumentException("Solo se puede activar un contrato pendiente");
+        Unidad unidad = propiedades.buscarUnidad(c.getCodigoUnidad());
+        if (unidad == null || unidad.getEstado() != EstadoUnidad.NO_ALQUILADA)
+            throw new IllegalArgumentException("La unidad ya esta alquilada o no existe");
+
+        // Todo lo que se pueda validar se comprueba ANTES de cambiar estados.
+        pagos.validarGeneracionCuotas(c);
         contratos.activar(c.getNumero());
-        propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.ALQUILADA);
-        return pagos.generarCuotas(c);
+        try {
+            ListaSimple<Cuota> nuevas = pagos.generarCuotas(c);
+            propiedades.cambiarEstadoUnidad(c.getCodigoUnidad(), EstadoUnidad.ALQUILADA);
+            return nuevas;
+        } catch (RuntimeException ex) {
+            // Evita dejar el contrato activo sin cuotas o la unidad alquilada a medias.
+            try {
+                if (!pagos.cuotasDe(c.getNumero()).estaVacia()) pagos.eliminarCuotas(c.getNumero());
+            } catch (RuntimeException falloLimpieza) {
+                ex.addSuppressed(falloLimpieza);
+            }
+            c.setEstado(EstadoContrato.PENDIENTE);
+            unidad.setEstado(EstadoUnidad.NO_ALQUILADA);
+            throw new IllegalArgumentException("No se completo la activacion: " + ex.getMessage(), ex);
+        }
     }
 
     // Documentos registrados: por cada contrato PENDIENTE del arrendatario que ya tiene todos sus
