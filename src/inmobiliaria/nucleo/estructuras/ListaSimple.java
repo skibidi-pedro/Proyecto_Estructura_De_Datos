@@ -5,8 +5,9 @@ package inmobiliaria.nucleo.estructuras;
  *
  * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
  */
-public class ListaSimple<T> {
+public class ListaSimple<T> implements Iterable<T> {
     private NodoSimple<T> cabeza;
+    private NodoSimple<T> cola;
     private int tamano;
 
     public ListaSimple() {
@@ -22,12 +23,10 @@ public class ListaSimple<T> {
         NodoSimple<T> nuevo = new NodoSimple<>(dato);
         if (estaVacia()) {
             cabeza = nuevo;
+            cola = nuevo;
         } else {
-            NodoSimple<T> actual = cabeza;
-            while (actual.getSiguiente() != null) {
-                actual = actual.getSiguiente();
-            }
-            actual.setSiguiente(nuevo);
+            cola.setSiguiente(nuevo);
+            cola = nuevo;
         }
         tamano++;
     }
@@ -41,6 +40,20 @@ public class ListaSimple<T> {
             actual = actual.getSiguiente();
         }
         return actual.getDato();
+    }
+
+    @Override
+    public java.util.Iterator<T> iterator() {
+        return new java.util.Iterator<T>() {
+            private NodoSimple<T> actual = cabeza;
+            public boolean hasNext() { return actual != null; }
+            public T next() {
+                if (actual == null) throw new java.util.NoSuchElementException();
+                T dato = actual.getDato();
+                actual = actual.getSiguiente();
+                return dato;
+            }
+        };
     }
 
     public int getTamano() {
