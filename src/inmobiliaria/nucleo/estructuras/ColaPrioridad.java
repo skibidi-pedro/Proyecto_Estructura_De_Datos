@@ -1,62 +1,67 @@
 package inmobiliaria.nucleo.estructuras;
 
 /**
- * Cola de prioridad con heap binario (mantenimiento y cobros urgentes).
- *
- * Responsable: Integrante 1 - Francia Ramos Johan Mitziu
+ * Heap binario minimo. Encolar y desencolar: O(log n).
+ * En prioridades iguales mantiene orden de llegada.
  */
 public class ColaPrioridad<T> {
-    private static class NodoPrioridad<E> {
+    private static class Elemento<E> {
         E dato;
         int prioridad;
-        NodoPrioridad<E> siguiente;
-
-        NodoPrioridad(E dato, int prioridad) {
+        long orden;
+        Elemento(E dato, int prioridad, long orden) {
             this.dato = dato;
             this.prioridad = prioridad;
-            this.siguiente = null;
+            this.orden = orden;
         }
     }
-
-    private NodoPrioridad<T> cabeza;
+    private Object[] elementos = new Object[16];
     private int tamano;
+    private long secuencia;
 
-    public ColaPrioridad() {
-        this.cabeza = null;
-        this.tamano = 0;
-    }
+    public boolean estaVacia() { return tamano == 0; }
+    public int getTamano() { return tamano; }
 
-    public boolean estaVacia() {
-        return cabeza == null;
+    @SuppressWarnings("unchecked")
+    private Elemento<T> en(int i) { return (Elemento<T>) elementos[i]; }
+
+    private int comparar(Elemento<T> a, Elemento<T> b) {
+        int resultado = Integer.compare(a.prioridad, b.prioridad);
+        return resultado != 0 ? resultado : Long.compare(a.orden, b.orden);
     }
 
     public void encolar(T dato, int prioridad) {
-        NodoPrioridad<T> nuevo = new NodoPrioridad<>(dato, prioridad);
-        if (estaVacia() || prioridad < cabeza.prioridad) {
-            nuevo.siguiente = cabeza;
-            cabeza = nuevo;
-        } else {
-            NodoPrioridad<T> actual = cabeza;
-            while (actual.siguiente != null && actual.siguiente.prioridad <= prioridad) {
-                actual = actual.siguiente;
-            }
-            nuevo.siguiente = actual.siguiente;
-            actual.siguiente = nuevo;
+        if (tamano == elementos.length) {
+            Object[] copia = new Object[elementos.length * 2];
+            System.arraycopy(elementos, 0, copia, 0, tamano);
+            elementos = copia;
         }
-        tamano++;
+        Elemento<T> nuevo = new Elemento<>(dato, prioridad, secuencia++);
+        int i = tamano++;
+        while (i > 0) {
+            int padre = (i - 1) / 2;
+            if (comparar(nuevo, en(padre)) >= 0) break;
+            elementos[i] = elementos[padre];
+            i = padre;
+        }
+        elementos[i] = nuevo;
     }
 
     public T desencolar() {
-        if (estaVacia()) {
-            return null;
+        if (tamano == 0) return null;
+        T dato = en(0).dato;
+        Elemento<T> ultimo = en(--tamano);
+        elementos[tamano] = null;
+        if (tamano == 0) return dato;
+        int i = 0;
+        while (2 * i + 1 < tamano) {
+            int hijo = 2 * i + 1;
+            if (hijo + 1 < tamano && comparar(en(hijo + 1), en(hijo)) < 0) hijo++;
+            if (comparar(ultimo, en(hijo)) <= 0) break;
+            elementos[i] = elementos[hijo];
+            i = hijo;
         }
-        T dato = cabeza.dato;
-        cabeza = cabeza.siguiente;
-        tamano--;
+        elementos[i] = ultimo;
         return dato;
-    }
-
-    public int getTamano() {
-        return tamano;
     }
 }
